@@ -1,0 +1,2404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ObraRadar — Sistema Completo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#F0EEE9;--surface:#FAFAF8;--card:#FFF;--border:rgba(0,0,0,0.07);--border-md:rgba(0,0,0,0.12);--text:#1C1B18;--muted:#6B6860;--hint:#AAA89F;--orange:#D95F1A;--orange-l:#FFF0E6;--orange-b:#F5C4A0;--red:#C0321A;--red-bg:#FFF0ED;--green:#1C7A3F;--green-bg:#EBF7EF;--blue:#1655A8;--blue-bg:#EAF0FB;--amber:#966010;--amber-bg:#FFF8E6;--purple:#5E2DBF;--purple-bg:#F2EDFF;--sw:220px;--th:54px;--r:10px;--rs:7px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{height:var(--th);background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px 0 0;flex-shrink:0;z-index:100}
+.tb-logo{width:var(--sw);padding:0 18px;display:flex;align-items:center;gap:8px;font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:var(--text);flex-shrink:0}
+.lm{display:flex;gap:3px}
+.ld{width:8px;height:8px;border-radius:50%}
+.tb-search{flex:1;position:relative;max-width:320px}
+.tb-search input{width:100%;height:32px;border:1px solid var(--border-md);border-radius:var(--rs);background:var(--bg);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);padding:0 12px 0 32px;outline:none}
+.tb-search input:focus{border-color:var(--orange)}
+.tb-search i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--hint);font-size:14px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.nb{position:relative;width:32px;height:32px;border-radius:var(--rs);border:1px solid var(--border-md);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:15px}
+.nd{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--red);border:1.5px solid var(--card)}
+.av{width:32px;height:32px;border-radius:50%;background:var(--purple-bg);color:var(--purple);font-family:'Sora',sans-serif;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.db{font-size:11px;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:20px;border:1px solid var(--border-md)}
+.app-body{display:flex;flex:1;overflow:hidden}
+.sidebar{width:var(--sw);background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:12px 10px;flex-shrink:0;overflow-y:auto}
+.sl{font-size:10px;font-weight:600;color:var(--hint);letter-spacing:1.2px;text-transform:uppercase;padding:0 8px;margin:0 0 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--rs);cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s;margin-bottom:2px}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{background:var(--orange-l);color:var(--orange);font-weight:500}
+.nav-item i{font-size:16px;flex-shrink:0}
+.nbadge{margin-left:auto;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:var(--red-bg);color:var(--red)}
+.nbadge.g{background:var(--green-bg);color:var(--green)}
+.sidebar-bot{margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
+.content{flex:1;overflow-y:auto;padding:20px}
+.view{display:none}
+.view.active{display:block}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.pt{font-family:'Sora',sans-serif;font-size:20px;font-weight:700}
+.ps{font-size:13px;color:var(--muted);margin-top:3px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border:none}
+.btn-p{background:var(--orange);color:#fff}.btn-p:hover{opacity:.9}
+.btn-s{background:var(--card);color:var(--text);border:1px solid var(--border-md)}.btn-s:hover{background:var(--bg)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.ki{width:32px;height:32px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:10px}
+.kv{font-family:'Sora',sans-serif;font-size:24px;font-weight:700}
+.kl{font-size:12px;color:var(--muted);margin-top:2px}
+.kd{font-size:11px;margin-top:6px;display:flex;align-items:center;gap:3px}
+.kd.up{color:var(--green)}.kd.dn{color:var(--red)}.kd.wn{color:var(--amber)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.ct{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.ct i{font-size:15px;color:var(--muted);margin-right:5px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--bg);padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
+tbody tr:hover{background:var(--bg)}
+tbody td{padding:9px 12px;vertical-align:middle}
+tbody tr:last-child{border-bottom:none}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px}
+.bn{background:#FFEAED;color:#B0202A}.ba{background:#FFF4E0;color:#8A5700}.br{background:#E3EEFF;color:#1145A0}
+.bac{background:var(--orange-l);color:var(--orange);font-weight:600}.bes{background:var(--blue-bg);color:var(--blue)}.bfu{background:var(--bg);color:var(--muted)}
+.bst0{background:var(--blue-bg);color:var(--blue)}.bst1{background:var(--amber-bg);color:var(--amber)}.bst2{background:var(--purple-bg);color:var(--purple)}.bst3{background:var(--green-bg);color:var(--green)}.bst4{background:var(--red-bg);color:var(--red)}
+.fb{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.fs{height:32px;padding:0 10px;border:1px solid var(--border-md);border-radius:var(--rs);background:var(--card);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);outline:none;cursor:pointer}
+.fs:focus{border-color:var(--orange)}
+.sf{height:32px;padding:0 10px 0 30px;border:1px solid var(--border-md);border-radius:var(--rs);background:var(--card);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);outline:none;min-width:190px}
+.sw{position:relative}.sw i{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--hint);font-size:13px;pointer-events:none}
+.kboard{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;min-height:520px}
+.kcol{min-width:210px;max-width:210px;background:var(--bg);border-radius:var(--r);padding:10px;flex-shrink:0}
+.kch{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.kct{font-size:12px;font-weight:600}
+.kcc{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--card)}
+.kcards{display:flex;flex-direction:column;gap:8px;min-height:180px}
+.kcard{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:11px;cursor:pointer;transition:all .15s}
+.kcard:hover{box-shadow:0 3px 12px rgba(0,0,0,.08);transform:translateY(-1px)}
+.ktype{font-size:10px;color:var(--muted);margin-bottom:4px}
+.kname{font-size:12px;font-weight:500;line-height:1.3;margin-bottom:2px}
+.kcity{font-size:11px;color:var(--muted)}
+.kbot{display:flex;align-items:center;justify-content:space-between;margin-top:9px;padding-top:7px;border-top:1px solid var(--border)}
+.kav{width:20px;height:20px;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#fff}
+.ali{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:var(--rs);margin-bottom:8px;cursor:pointer;border:1px solid transparent;transition:opacity .15s}
+.ali:hover{opacity:.9}
+.ali.danger{background:var(--red-bg);border-color:#F5C4BE}
+.ali.warn{background:var(--amber-bg);border-color:#F5D89A}
+.ali.info{background:var(--blue-bg);border-color:#A8BFEE}
+.ali.success{background:var(--green-bg);border-color:#9ADAB8}
+.aico{font-size:18px;flex-shrink:0;margin-top:1px}
+.atitle{font-size:13px;font-weight:500}
+.asub{font-size:12px;color:var(--muted);margin-top:2px}
+.atime{font-size:11px;color:var(--hint);white-space:nowrap}
+.aacc{display:flex;gap:6px;margin-top:8px}
+.abtn{font-size:11px;padding:3px 10px;border-radius:var(--rs);border:1px solid var(--border-md);background:var(--card);color:var(--text);cursor:pointer}
+.mc{background:var(--bg);border-radius:var(--rs);overflow:hidden;position:relative}
+.mleg{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.mli{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.mld{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.fr{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.fl{font-size:11px;color:var(--muted);width:88px;flex-shrink:0}
+.fw{flex:1;height:18px;background:var(--bg);border-radius:4px;overflow:hidden}
+.ff{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:7px}
+.fn{font-size:10px;font-weight:600;color:#fff}
+.fc{font-size:11px;color:var(--muted);width:36px;text-align:right}
+.tr2{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.tr2:last-child{border-bottom:none}
+.tav{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:#fff}
+.tn{font-size:13px;font-weight:500;flex:1}
+.tbw{width:90px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+.tb2{height:100%;border-radius:3px}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;display:none;align-items:center;justify-content:center}
+.mo.open{display:flex}
+.mdl{background:var(--card);border-radius:12px;padding:24px;width:560px;max-width:95vw;max-height:85vh;overflow-y:auto;position:relative}
+.mtitle{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;margin-bottom:16px;padding-right:32px}
+.mclose{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:var(--rs);border:1px solid var(--border-md);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--muted)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.fi{display:flex;flex-direction:column;gap:4px}
+.fi label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.fv{font-size:13px;padding:7px 10px;background:var(--bg);border-radius:var(--rs);border:1px solid var(--border)}
+.fi input,.fi select,.fi textarea{font-size:13px;color:var(--text);padding:7px 10px;background:var(--bg);border-radius:var(--rs);border:1px solid var(--border-md);outline:none;font-family:'DM Sans',sans-serif;width:100%}
+.fi input:focus,.fi select:focus,.fi textarea:focus{border-color:var(--orange)}
+.sdiv{border:none;border-top:1px solid var(--border);margin:16px 0}
+.cpill{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:8px 12px;margin-bottom:8px}
+.cpill i{font-size:15px;color:var(--orange)}
+.wbtn{margin-left:auto;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bg);font-size:11px;padding:3px 10px;border-radius:20px;cursor:pointer}
+.ci-sw{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:20px}
+.ci-ir{display:flex;gap:10px}
+.ci-in{flex:1;height:44px;padding:0 14px;border:1.5px solid var(--border-md);border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s}
+.ci-in:focus{border-color:var(--orange);background:#fff}
+.ci-tg{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.ct2{font-size:11px;padding:4px 12px;border-radius:20px;border:1px solid var(--border-md);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .12s;user-select:none}
+.ct2.on{background:var(--text);color:#fff;border-color:var(--text)}
+.cigrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.cicard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;position:relative;transition:all .15s}
+.cicard:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);transform:translateY(-1px)}
+.ciav{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.cin{font-size:14px;font-weight:600}
+.ciro{font-size:11px;color:var(--muted);margin-top:2px}
+.cirow{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-top:5px}
+.cirow i{font-size:13px;color:var(--orange);flex-shrink:0}
+.cibg{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;position:absolute;top:12px;right:12px}
+.cibw{height:3px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:10px}
+.cib{height:100%;border-radius:3px}
+.ciac{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.cibtn{flex:1;font-size:11px;padding:5px 0;border-radius:var(--rs);border:1px solid var(--border-md);background:var(--bg);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:background .12s}
+.cibtn:hover{background:#ebebeb}
+.cibtn.p{background:var(--orange);color:#fff;border-color:var(--orange)}.cibtn.p:hover{opacity:.9}
+.lring{width:36px;height:36px;border:3px solid var(--border-md);border-top-color:var(--orange);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stps{display:flex;flex-direction:column;gap:7px;max-width:280px;margin:12px auto 0;text-align:left}
+.stp{font-size:12px;color:var(--hint);display:flex;align-items:center;gap:7px}
+.sdot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.stp.on{color:var(--orange)}.stp.ok{color:var(--green)}
+.tc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+.tmav{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0}
+.tmn{font-size:15px;font-weight:600}
+.tmr{font-size:12px;color:var(--muted);margin-top:2px}
+.tmst{display:flex;gap:16px;margin-left:auto}
+.tmsv{font-family:'Sora',sans-serif;font-size:18px;font-weight:700;text-align:center}
+.tmsl{font-size:10px;color:var(--muted);text-align:center}
+.tip2{position:absolute;background:var(--card);border:1px solid var(--border-md);border-radius:var(--rs);padding:10px 12px;font-size:12px;z-index:50;min-width:155px;pointer-events:none;display:none;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.tip2-t{font-weight:600;margin-bottom:4px}
+.tip2-r{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:11px;line-height:1.6}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-md);border-radius:8px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="tb-logo">
+    <div class="lm"><div class="ld" style="background:#C0321A"></div><div class="ld" style="background:#D95F1A"></div><div class="ld" style="background:#1655A8"></div></div>
+    ObraRadar <span style="font-size:9px;background:#C0321A;color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:700">v1.5</span>
+  </div>
+  <div class="tb-search"><i class="ti ti-search" aria-hidden="true"></i><input type="text" placeholder="Buscar obra, cidade, empresa..."></div>
+  <div class="tb-right">
+    <span class="db" id="dataBadge"></span>
+    <span id="perfilLabel" style="font-size:11px;color:var(--muted);cursor:pointer;white-space:nowrap" onclick="trocarPerfil()" title="Trocar perfil"></span>
+    <div class="nb" onclick="abrirConfig()" title="Configurações"><i class="ti ti-settings" aria-hidden="true"></i></div>
+    <div class="nb" onclick="navTo('alertas')"><i class="ti ti-bell" aria-hidden="true"></i><span class="nd"></span></div>
+    <div class="av" id="avTopbar" onclick="trocarPerfil()" title="Trocar perfil" style="cursor:pointer">?</div>
+  </div>
+</div>
+<!-- TELA DE LOGIN v1.7 -->
+<div id="telaLogin" style="position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="width:100%;max-width:400px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-family:'Sora',sans-serif;font-size:26px;font-weight:700;color:var(--text)">🏗️ ObraRadar</div>
+      <div style="font-size:12px;background:#C0321A;color:#fff;padding:2px 10px;border-radius:10px;display:inline-block;margin-top:4px">v1.7 · Tecnoportas & Tecnodock</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:8px">Selecione seu perfil e informe sua senha</div>
+    </div>
+    <div id="loginCards" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--muted)">ObraRadar v1.7 · Tecnoportas & Tecnodock</div>
+  </div>
+</div>
+
+<div class="app-body">
+<nav class="sidebar">
+  <div style="margin-bottom:20px">
+    <div class="sl">Principal</div>
+    <div class="nav-item active" id="nav-dashboard" onclick="navTo('dashboard')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>Dashboard</div>
+    <div class="nav-item" id="nav-obras" onclick="navTo('obras')"><i class="ti ti-building-skyscraper" aria-hidden="true"></i>Banco de Obras<span class="nbadge">36</span></div>
+    <div class="nav-item" id="nav-crm" onclick="navTo('crm')"><i class="ti ti-layout-kanban" aria-hidden="true"></i>CRM Pipeline</div>
+  </div>
+  <div style="margin-bottom:20px">
+    <div class="sl">IA Tecnoportas</div>
+    <div class="nav-item" id="nav-raio-x" onclick="navTo('raio-x')" style="background:linear-gradient(135deg,#FFF0E6,transparent);border:1px solid #F5C4A0;font-weight:600"><i class="ti ti-bolt" aria-hidden="true" style="color:#D95F1A"></i>Raio-X da Obra<span class="nbadge" style="background:#D95F1A;color:#fff">IA</span></div>
+    <div class="nav-item" id="nav-espia" onclick="navTo('espia')" style="background:linear-gradient(135deg,#F2EDFF,transparent);border:1px solid #C9B8F5;font-weight:600"><i class="ti ti-spy" aria-hidden="true" style="color:#5E2DBF"></i>PDF Espião<span class="nbadge" style="background:#5E2DBF;color:#fff">NOVO</span></div>
+    <div class="nav-item" id="nav-contatos" onclick="navTo('contatos')"><i class="ti ti-brain" aria-hidden="true"></i>Buscar Decisores<span class="nbadge g">IA</span></div>
+  </div>
+  <div style="margin-bottom:20px">
+    <div class="sl">Gestão</div>
+    <div class="nav-item gestor-only" id="nav-feed" onclick="navTo('feed')"><i class="ti ti-activity" aria-hidden="true"></i>Feed de Atividades<span class="nbadge" style="background:#1C7A3F;color:#fff">NOVO</span></div>
+    <div class="nav-item gestor-only" id="nav-intec" onclick="navTo('intec')"><i class="ti ti-file-import" aria-hidden="true"></i>Importar INTEC<span class="nbadge" style="background:#1655A8;color:#fff">NOVO</span></div>
+    <div class="nav-item" id="nav-alertas" onclick="navTo('alertas')"><i class="ti ti-bell-ringing" aria-hidden="true"></i>Alertas<span class="nbadge">7</span></div>
+    <div class="nav-item gestor-only" id="nav-time" onclick="navTo('time')"><i class="ti ti-users" aria-hidden="true"></i>Time Comercial</div>
+    <div class="nav-item" id="nav-relatorios" onclick="navTo('relatorios')"><i class="ti ti-chart-bar" aria-hidden="true"></i>Relatórios</div>
+  </div>
+  <div class="sidebar-bot"><div class="nav-item" onclick="abrirConfig()"><i class="ti ti-settings" aria-hidden="true"></i>Configurações</div></div>
+</nav>
+<main class="content">
+
+<!-- DASHBOARD -->
+<div class="view active" id="view-dashboard">
+  <div class="ph">
+    <div><div class="pt">Dashboard</div><div class="ps">Visão geral em tempo real — Brasil</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-s btn-sm"><i class="ti ti-refresh" aria-hidden="true"></i>Atualizar</button>
+      <button class="btn btn-p btn-sm" onclick="openNovaObra()"><i class="ti ti-plus" aria-hidden="true"></i>Nova obra</button>
+    </div>
+  </div>
+  <div class="kpi-row">
+    <div class="kc"><div class="ki" style="background:#FFEAED"><i class="ti ti-building-skyscraper" aria-hidden="true" style="color:#C0321A;font-size:16px"></i></div><div class="kv">3.847</div><div class="kl">Obras ativas</div><div class="kd up"><i class="ti ti-arrow-up" aria-hidden="true"></i>+124 hoje</div></div>
+    <div class="kc"><div class="ki" style="background:var(--orange-l)"><i class="ti ti-sparkles" aria-hidden="true" style="color:var(--orange);font-size:16px"></i></div><div class="kv">124</div><div class="kl">Novas nas últimas 24h</div><div class="kd up"><i class="ti ti-arrow-up" aria-hidden="true"></i>+18% vs ontem</div></div>
+    <div class="kc"><div class="ki" style="background:var(--amber-bg)"><i class="ti ti-phone-off" aria-hidden="true" style="color:var(--amber);font-size:16px"></i></div><div class="kv">287</div><div class="kl">Sem contato</div><div class="kd wn"><i class="ti ti-alert-triangle" aria-hidden="true"></i>74 vencidos</div></div>
+    <div class="kc"><div class="ki" style="background:var(--green-bg)"><i class="ti ti-trophy" aria-hidden="true" style="color:var(--green);font-size:16px"></i></div><div class="kv">8,3%</div><div class="kl">Taxa de conversão</div><div class="kd up"><i class="ti ti-arrow-up" aria-hidden="true"></i>+1,2pp este mês</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct"><span><i class="ti ti-map-pin" aria-hidden="true"></i>Mapa de obras — Brasil</span>
+        <div style="display:flex;gap:4px">
+          <span id="ft-nova" class="badge bn" style="cursor:pointer;font-size:10px" onclick="toggleMF('nova',this)">● Novas</span>
+          <span id="ft-ampl" class="badge ba" style="cursor:pointer;font-size:10px" onclick="toggleMF('ampl',this)">● Ampliações</span>
+          <span id="ft-ref"  class="badge br" style="cursor:pointer;font-size:10px" onclick="toggleMF('ref',this)">● Reformas</span>
+        </div>
+      </div>
+      <div class="mc" style="height:270px"><div class="tip2" id="mTip"></div><svg id="mSvg" width="100%" viewBox="0 0 420 270" style="display:block"></svg></div>
+      <div class="mleg" style="margin-top:8px">
+        <div class="mli"><div class="mld" style="background:#C0321A"></div>Nova construção</div>
+        <div class="mli"><div class="mld" style="background:#D95F1A"></div>Ampliação</div>
+        <div class="mli"><div class="mld" style="background:#1655A8"></div>Reforma</div>
+        <div class="mli"><div class="mld" style="background:#C0321A;opacity:.25;border:2px solid #C0321A;width:10px;height:10px;border-radius:50%"></div>Acabamento ⚡</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct"><span><i class="ti ti-bell-ringing" aria-hidden="true"></i>Alertas urgentes</span><span class="badge bn">7 novos</span></div>
+      <div id="dAlertas"></div>
+      <button class="btn btn-s btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="navTo('alertas')">Ver todos os alertas</button>
+    </div>
+  </div>
+  <div class="g3">
+    <div class="card">
+      <div class="ct"><span><i class="ti ti-list" aria-hidden="true"></i>Obras prioritárias</span><span class="badge bac">acabamento</span></div>
+      <div id="dPrio"></div>
+      <button class="btn btn-s btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="navTo('obras')">Ver banco completo</button>
+    </div>
+    <div class="card">
+      <div class="ct"><span><i class="ti ti-filter" aria-hidden="true"></i>Funil comercial</span><span style="font-size:11px;color:var(--muted)">maio 2026</span></div>
+      <div id="dFunil"></div>
+    </div>
+    <div class="card">
+      <div class="ct"><span><i class="ti ti-users" aria-hidden="true"></i>Time comercial</span><span class="badge" style="background:var(--green-bg);color:var(--green)">meta 40/mês</span></div>
+      <div id="dTime"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct"><span><i class="ti ti-chart-bar" aria-hidden="true"></i>Novas obras detectadas — últimas 12 semanas</span></div>
+    <div style="height:170px;position:relative"><canvas id="cSem"></canvas></div>
+  </div>
+</div>
+
+<!-- BANCO DE OBRAS -->
+<div class="view" id="view-obras">
+  <div class="ph">
+    <div><div class="pt">Banco de Obras</div><div class="ps">3.847 obras ativas · atualizado hoje às <span id="horaObras"></span></div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-s btn-sm"><i class="ti ti-upload" aria-hidden="true"></i>Importar CSV</button>
+      <button class="btn btn-s btn-sm"><i class="ti ti-download" aria-hidden="true"></i>Exportar</button>
+      <button class="btn btn-p btn-sm" onclick="openNovaObra()"><i class="ti ti-plus" aria-hidden="true"></i>Cadastrar obra</button>
+    </div>
+  </div>
+  <div class="fb">
+    <div class="sw"><i class="ti ti-search" aria-hidden="true"></i><input class="sf" placeholder="Buscar obra, cidade, contato..." oninput="filtObras()"></div>
+    <select class="fs" onchange="filtObras()"><option value="">Todos os tipos</option><option value="nova">Nova construção</option><option value="ampliacao">Ampliação</option><option value="reforma">Reforma</option></select>
+    <select class="fs" onchange="filtObras()"><option value="">Todas as fases</option><option>Fundação</option><option>Estrutura</option><option>Acabamento</option></select>
+    <select class="fs" onchange="filtObras()"><option value="">Todos estados</option><option>SP</option><option>RJ</option><option>MG</option><option>PR</option><option>RS</option><option>BA</option><option>PE</option><option>GO</option><option>CE</option></select>
+    <select class="fs" onchange="filtObras()"><option value="">Todos os status</option><option>Novo</option><option>Em contato</option><option>Proposta</option><option>Ganho</option><option>Perdido</option></select>
+  </div>
+  <div class="card" style="padding:0"><div class="tw"><table><thead><tr><th>Obra</th><th>Tipo</th><th>Fase</th><th>Cidade/UF</th><th>Contato decisor</th><th>Área</th><th>Status</th><th>Vendedor</th><th></th></tr></thead><tbody id="oTbody"></tbody></table></div></div>
+</div>
+
+<!-- CRM -->
+<div class="view" id="view-crm">
+  <div class="ph">
+    <div><div class="pt">CRM Pipeline</div><div class="ps">Pipeline de vendas por obra · maio 2026</div></div>
+    <div style="display:flex;gap:8px">
+      <select class="fs" id="filtroVendedor"><option>Todos os vendedores</option></select>
+      <button class="btn btn-p btn-sm"><i class="ti ti-plus" aria-hidden="true"></i>Nova oportunidade</button>
+    </div>
+  </div>
+  <div class="kboard" id="kboard"></div>
+</div>
+
+<!-- BUSCAR DECISORES -->
+<div class="view" id="view-contatos">
+  <div class="ph">
+    <div><div class="pt">Buscar Decisores — IA</div><div class="ps">Digite uma empresa e a IA mapeia quem decide a compra de portas automáticas</div></div>
+  </div>
+  <div class="ci-sw">
+    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Empresa ou construtora</div>
+    <div class="ci-ir">
+      <input class="ci-in" id="ciInput" placeholder="Ex: Italac, MRV, Cyrela, Havan, GPA, Gerdau..." onkeydown="if(event.key==='Enter')buscarD()">
+      <button class="btn btn-p" id="ciBt" onclick="buscarD()"><i class="ti ti-brain" aria-hidden="true"></i>Buscar decisores</button>
+    </div>
+    <div class="ci-tg" id="ciTags">
+      <span class="ct2 on" data-t="Compras">Compras</span><span class="ct2 on" data-t="Engenharia">Engenharia</span><span class="ct2 on" data-t="Manutenção">Manutenção</span><span class="ct2 on" data-t="Facilities">Facilities</span><span class="ct2 on" data-t="Contratos">Contratos</span><span class="ct2 on" data-t="Diretoria">Diretoria</span>
+    </div>
+    <div style="margin-top:12px;padding:12px 14px;background:var(--orange-l);border:1px solid var(--orange-b);border-radius:var(--rs);font-size:12px;color:#7a3010;line-height:1.6">
+      <strong style="color:var(--orange)">Como funciona:</strong> A IA analisa o perfil da empresa e setor para identificar cargos e nomes plausíveis que influenciam a compra de portas automáticas. Para dados reais conecte: <strong>LinkedIn Sales Navigator · Apollo.io · Hunter.io</strong>
+    </div>
+  </div>
+  <div id="ciResult"></div>
+</div>
+
+<!-- ALERTAS -->
+<div class="view" id="view-alertas">
+  <div class="ph">
+    <div><div class="pt">Central de Alertas</div><div class="ps">Alertas em tempo real · <span id="aHora"></span></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-s btn-sm" onclick="ALERTAS.forEach(a=>{if(a.id)marcarAlertaLido(a.id);});ALERTAS.length=0;rendAlertas();showToast('Todos marcados como lidos','info')">Marcar todos lidos</button>
+      <button id="btnRadar" class="btn btn-p btn-sm gestor-only" onclick="rodarRadar()"><i class="ti ti-radar" aria-hidden="true"></i>Varrer obras agora</button>
+      <button class="btn btn-s btn-sm gestor-only" onclick="buscarLicitacoesPNCP()"><i class="ti ti-gavel" aria-hidden="true"></i>Buscar PNCP</button>
+    </div>
+  </div>
+  <div id="aList"></div>
+</div>
+
+<!-- TIME -->
+<div class="view" id="view-time">
+  <div class="ph">
+    <div><div class="pt">Time Comercial</div><div class="ps" id="tHead">Carregando...</div></div>
+    <button class="btn btn-p btn-sm"><i class="ti ti-plus" aria-hidden="true"></i>Adicionar vendedor</button>
+  </div>
+  <div id="tList"></div>
+</div>
+
+<!-- RAIO-X DA OBRA — PROMPT MASTER v1.5 -->
+<div class="view" id="view-raio-x">
+  <div class="ph">
+    <div>
+      <div class="pt" style="display:flex;align-items:center;gap:10px">
+        <span style="background:linear-gradient(135deg,#D95F1A,#C0321A);color:#fff;padding:4px 12px;border-radius:8px;font-size:13px">⚡ IA</span>
+        Raio-X Comercial da Obra
+      </div>
+      <div class="ps">Tecnoportas & Tecnodock · Análise completa em 10 segundos</div>
+    </div>
+  </div>
+
+  <!-- Input da obra -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="ct"><span>📋 Descreva ou cole os dados da obra</span></div>
+    <textarea id="rxInput" rows="5" style="width:100%;border:1.5px solid var(--border-md);border-radius:var(--rs);padding:12px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--bg);outline:none;resize:vertical;line-height:1.6" placeholder="Cole aqui a descrição da obra. Ex:&#10;&#10;Centro de Distribuição Assaí Atacadista, Rondonópolis-MT, 49.000m², fase acabamento. Construtora Succespar. Contato: Rosilene Cochaba (Compradora). Obra de nova construção industrial para operação de atacarejo."></textarea>
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-p" id="rxBtn" onclick="gerarRaioX()" style="flex:1;justify-content:center;min-width:200px">
+        <i class="ti ti-bolt" aria-hidden="true"></i>Gerar Raio-X Comercial
+      </button>
+      <button class="btn btn-s" onclick="document.getElementById('rxInput').value='';document.getElementById('rxResult').innerHTML=''">
+        <i class="ti ti-x" aria-hidden="true"></i>Limpar
+      </button>
+      <select id="rxModo" style="height:36px;padding:0 12px;border:1px solid var(--border-md);border-radius:var(--rs);background:var(--card);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text)">
+        <option value="padrao">Análise Completa</option>
+        <option value="fechar">Como Fechar Esta Venda</option>
+        <option value="priorizar">Quais Obras Priorizar</option>
+      </select>
+    </div>
+    <div style="margin-top:10px;padding:10px 12px;background:var(--orange-l);border:1px solid var(--orange-b);border-radius:var(--rs);font-size:12px;color:#7a3010">
+      💡 <strong>Dica:</strong> Você também pode analisar qualquer obra do banco — abra a ficha da obra e clique em <strong>"⚡ Analisar com IA"</strong>
+    </div>
+  </div>
+
+  <!-- Resultado -->
+  <div id="rxResult"></div>
+</div>
+
+<!-- RELATÓRIOS -->
+<div class="view" id="view-relatorios">
+  <div class="ph">
+    <div><div class="pt">Relatórios</div><div class="ps">Análise de desempenho · maio 2026</div></div>
+    <button class="btn btn-s btn-sm"><i class="ti ti-download" aria-hidden="true"></i>Exportar PDF</button>
+  </div>
+  <div class="kpi-row">
+    <div class="kc"><div class="kv">R$ 21,4M</div><div class="kl">Volume negócios abertos</div><div class="kd up"><i class="ti ti-arrow-up" aria-hidden="true"></i>+14% vs mês anterior</div></div>
+    <div class="kc"><div class="kv">319</div><div class="kl">Obras ganhas no mês</div><div class="kd up"><i class="ti ti-arrow-up" aria-hidden="true"></i>+22 vs abril</div></div>
+    <div class="kc"><div class="kv">R$ 67.400</div><div class="kl">Ticket médio</div><div class="kd up"><i class="ti ti-arrow-up" aria-hidden="true"></i>+R$ 3.200</div></div>
+    <div class="kc"><div class="kv">24 dias</div><div class="kl">Ciclo médio de venda</div><div class="kd up"><i class="ti ti-arrow-down" aria-hidden="true"></i>-3 dias (melhora)</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ct"><span><i class="ti ti-chart-donut" aria-hidden="true"></i>Obras por tipo</span></div><div style="height:200px"><canvas id="cTipo"></canvas></div></div>
+    <div class="card"><div class="ct"><span><i class="ti ti-chart-line" aria-hidden="true"></i>Receita mensal 2026</span></div><div style="height:200px"><canvas id="cReceita"></canvas></div></div>
+  </div>
+</div>
+
+<!-- FEED DE ATIVIDADES v1.7 -->
+<div class="view" id="view-feed">
+  <div class="ph">
+    <div><div class="pt">Feed de Atividades</div><div class="ps">Timeline de contatos do time em tempo real</div></div>
+    <button class="btn btn-s btn-sm" onclick="rendFeed()"><i class="ti ti-refresh" aria-hidden="true"></i>Atualizar</button>
+  </div>
+  <div id="feedList" style="display:flex;flex-direction:column;gap:10px"></div>
+</div>
+
+<!-- IMPORTADOR INTEC v1.7 -->
+<div class="view" id="view-intec">
+  <div class="ph">
+    <div><div class="pt">Importar obras da INTEC</div><div class="ps">Arraste o CSV exportado do site da INTEC Brasil</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="ct"><span>📥 Como exportar da INTEC</span></div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:14px">
+      1. Acesse <strong>intecbrasil.com.br</strong> → faça login<br>
+      2. Vá em <strong>Relatórios → Exportar → CSV</strong><br>
+      3. Baixe o arquivo e arraste abaixo
+    </div>
+    <div id="dropZone" style="border:2px dashed var(--border-md);border-radius:var(--r);padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)"
+      onclick="document.getElementById('csvInput').click()"
+      ondragover="event.preventDefault();this.style.borderColor='#1655A8';this.style.background='#EAF0FB'"
+      ondragleave="this.style.borderColor='var(--border-md)';this.style.background='var(--bg)'"
+      ondrop="event.preventDefault();this.style.borderColor='var(--border-md)';this.style.background='var(--bg)';processarCSVIntec(event.dataTransfer.files[0])">
+      <i class="ti ti-file-spreadsheet" aria-hidden="true" style="font-size:36px;color:var(--muted);margin-bottom:10px;display:block"></i>
+      <div style="font-size:14px;font-weight:500;color:var(--text)">Arraste o CSV aqui ou clique para selecionar</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Suporte: arquivos .csv e .xlsx da INTEC</div>
+    </div>
+    <input type="file" id="csvInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="processarCSVIntec(this.files[0])">
+    <div id="intecPreview" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- PDF ESPIÃO v1.7 -->
+<div class="view" id="view-espia">
+  <div class="ph">
+    <div>
+      <div class="pt" style="display:flex;align-items:center;gap:8px">
+        <span style="background:linear-gradient(135deg,#C0321A,#5E2DBF);color:#fff;padding:3px 10px;border-radius:8px;font-size:12px">🕵️ ESPIÃO</span>
+        Analisar PDF do Concorrente
+      </div>
+      <div class="ps">Jogue um orçamento do concorrente — a IA extrai os dados e encontra os decisores</div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div style="background:#FFF0E6;border:1px solid #F5C4A0;border-radius:var(--rs);padding:12px 14px;margin-bottom:14px;font-size:12px;color:#7A3010">
+      💡 <strong>Como funciona:</strong> Você recebeu um orçamento do concorrente (Dynaco, Albany, Hörmann)? Jogue o PDF aqui. A IA extrai os dados da empresa, localiza a obra e encontra os decisores para você chegar primeiro.
+    </div>
+    <div id="pdfDropZone" style="border:2px dashed #F5C4A0;border-radius:var(--r);padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)"
+      onclick="document.getElementById('pdfInput').click()"
+      ondragover="event.preventDefault();this.style.borderColor='#D95F1A';this.style.background='#FFF0E6'"
+      ondragleave="this.style.borderColor='#F5C4A0';this.style.background='var(--bg)'"
+      ondrop="event.preventDefault();this.style.borderColor='#F5C4A0';this.style.background='var(--bg)';analisarPDFEspia(event.dataTransfer.files[0])">
+      <i class="ti ti-file-type-pdf" aria-hidden="true" style="font-size:36px;color:#D95F1A;margin-bottom:10px;display:block"></i>
+      <div style="font-size:14px;font-weight:500;color:var(--text)">Arraste o PDF do concorrente aqui</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Orçamento, proposta técnica, memorial descritivo</div>
+    </div>
+    <input type="file" id="pdfInput" accept=".pdf" style="display:none" onchange="analisarPDFEspia(this.files[0])">
+    <div id="espiaResult" style="margin-top:14px"></div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- MODAL -->
+<!-- MODAL CONFIGURAÇÕES -->
+<div class="mo" id="mConfig">
+  <div class="mdl" style="max-width:560px">
+    <div class="mtitle">⚙️ Configurações do ObraRadar</div>
+    <div class="mclose" onclick="document.getElementById('mConfig').classList.remove('open')"><i class="ti ti-x" aria-hidden="true"></i></div>
+    <div style="background:#EAF0FB;border:1px solid #A8BFEE;border-radius:var(--rs);padding:14px 16px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#1655A8;margin-bottom:8px">🤖 Chave Groq AI — 100% grátis, sem cartão</div>
+      <div style="font-size:12px;color:#1A3A6B;margin-bottom:10px;line-height:1.7">
+        1. Acesse <strong>console.groq.com</strong> → Sign Up (só e-mail, sem cartão)<br>
+        2. Clique em <strong>API Keys → Create API Key</strong><br>
+        3. Cole a chave abaixo e clique Salvar — pronto!
+      </div>
+      <div class="fi" style="margin-bottom:8px">
+        <label>Sua chave Groq</label>
+        <div style="position:relative">
+          <input id="cfgGroqKey" type="text" placeholder="Cole aqui sua chave Groq..." style="font-family:monospace;font-size:12px;width:100%;padding-right:70px">
+          <button onclick="(()=>{const i=document.getElementById('cfgGroqKey');i.type=i.type==='text'?'password':'text';})()" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);border:none;background:var(--bg);color:var(--muted);cursor:pointer;font-size:11px;padding:3px 7px;border-radius:4px">mostrar</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-p btn-sm" onclick="salvarGroqKey()"><i class="ti ti-check" aria-hidden="true"></i>Salvar chave</button>
+        <button class="btn btn-s btn-sm" onclick="testarGroqKey()"><i class="ti ti-bolt" aria-hidden="true"></i>Testar conexão</button>
+        <button class="btn btn-s btn-sm" onclick="window.open('https://console.groq.com','_blank')">Obter chave grátis ↗</button>
+      </div>
+      <div id="cfgGroqStatus" style="margin-top:8px;font-size:12px"></div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        <span>👥 Time Comercial</span>
+        <button class="btn btn-s btn-sm" onclick="addVendedorRow()"><i class="ti ti-plus" aria-hidden="true"></i>Adicionar</button>
+      </div>
+      <div id="cfgVendedores" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-s" onclick="document.getElementById('mConfig').classList.remove('open')">Fechar</button>
+      <button class="btn btn-p" onclick="salvarConfiguracoes()"><i class="ti ti-device-floppy" aria-hidden="true"></i>Salvar tudo</button>
+    </div>
+  </div>
+</div>
+
+<!-- BANNER GROQ SETUP -->
+<div id="bannerSetup" style="position:fixed;bottom:0;left:0;right:0;background:#1655A8;color:#fff;padding:10px 20px;z-index:150;display:none;align-items:center;gap:12px;font-size:13px">
+  <i class="ti ti-info-circle" aria-hidden="true" style="font-size:18px;flex-shrink:0"></i>
+  <span>Configure sua chave <strong>Groq AI gratuita</strong> para ativar o Raio-X e Busca de Decisores</span>
+  <button onclick="abrirConfig()" style="margin-left:auto;background:#fff;color:#1655A8;border:none;padding:6px 16px;border-radius:var(--rs);font-weight:600;cursor:pointer;font-size:12px;white-space:nowrap">⚙️ Configurar agora (grátis)</button>
+  <button onclick="this.parentElement.style.display='none'" style="background:transparent;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:20px;padding:0 4px;line-height:1">×</button>
+</div>
+
+<!-- MODAL OBRA -->
+<div class="mo" id="mObra">
+  <div class="mdl">
+    <div class="mtitle" id="mObraT">Ficha da Obra</div>
+    <div class="mclose" onclick="closeM()"><i class="ti ti-x" aria-hidden="true"></i></div>
+    <div id="mObraB"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+const OBRAS=[
+  // ── OBRAS REAIS — INTEC BRASIL ─────────────────────────────────────────
+  {id:1,intec:true,codigo:'CO228520',nome:'TAYAYÁ RESIDENCE & RESORT PORTO RICO',
+   tipo:'nova',fase:'Estrutura',segmento:'COMERCIAL – TURISMO',
+   cidade:'São Pedro do Paraná',uf:'PR',cep:'87955-000',
+   endereco:'Estrada Beira Rio, s/nº – Porto São José',
+   empresa:'SM EMPREENDIMENTOS',cnpj:'35.618.547/0001-30',
+   inicio:'01/01/2024',termino:'01/01/2030',padrao:'Alto',
+   detalhes:'Resort com casas de 165–345 m² e apartamentos de 97–292 m². Fachada com brises, jardim vertical e guarda-corpo em vidro. Obra em andamento.',
+   contato:'Douglas Bontempi',cargo:'Orçamentista / Comprador',
+   tel:'(16) 99748-3109',
+   email:'douglas.bontempi@morrodosanjos.com.br',
+   email2:'compras@ca2a.com.br',
+   contatos:[
+     {nome:'Douglas Bontempi',cargo:'Orçamentista / Comprador(a) de Materiais',tel:'(16) 99748-3109',email:'douglas.bontempi@morrodosanjos.com.br'},
+     {nome:'Compras CA2A',cargo:'Compras',tel:'(16) 99748-3109',email:'compras@ca2a.com.br'},
+     {nome:'Restrito',cargo:'Engenheiro(a) Responsável pela Obra',tel:'—',email:'—'},
+   ],
+   m2:0,status:'Novo',vendedor:'',lat:-22.75,lng:-53.13},
+
+  {id:2,intec:true,codigo:'IN007919',nome:'ALYNE COSMÉTICOS / NOVA UNIDADE / MARANGUAPE',
+   tipo:'nova',fase:'Estrutura',segmento:'INDUSTRIAL – CONSUMO',
+   cidade:'Maranguape',uf:'CE',cep:'61946-200',
+   endereco:'Rua Idelfonso Dias X Rodovia CE-65, s/nº – Tangueira',
+   empresa:'GRUPO ALYNE COSMÉTICOS (CIGEL INDUSTRIAL LTDA)',cnpj:'03.773.027/0001-05',
+   inicio:'01/12/2025',termino:'01/06/2028',padrao:'—',
+   detalhes:'Nova unidade industrial para produção de novas linhas de cosméticos. Obra de implantação em andamento.',
+   contato:'Gustavo Sousa',cargo:'Engenheiro Responsável',
+   tel:'(85) 3521-8888',
+   email:'engenharia@grupoalyne.com.br',
+   contatos:[
+     {nome:'Elisangela Silva',cargo:'Recepção / Contato',tel:'(85) 3521-8888',email:'recepcao@grupoalyne.com.br'},
+     {nome:'Gustavo Sousa',cargo:'Engenheiro(a) Responsável',tel:'(85) 3521-8888',email:'engenharia@grupoalyne.com.br'},
+     {nome:'Roger Martins',cargo:'Engenheiro(a) Responsável',tel:'(85) 3521-8888',email:'engenharia1@grupoalyne.com.br'},
+     {nome:'Vitor Vieira',cargo:'Supervisor / Administrativo',tel:'(85) 3521-8888',email:'supervisoradm@grupoalyne.com.br'},
+   ],
+   m2:0,status:'Novo',vendedor:'',lat:-3.89,lng:-38.68},
+
+  {id:3,intec:true,codigo:'RE040125',nome:'D6 OCEAN VIEW',
+   tipo:'nova',fase:'Estrutura',segmento:'RESIDENCIAL – EMPREENDIMENTOS VERTICAIS',
+   cidade:'Itajaí',uf:'SC',cep:'88306-310',
+   endereco:'Alameda Ernesto Schneider, 30 – Fazenda',
+   empresa:'D6 EMPREENDIMENTOS LTDA',cnpj:'12.728.922/0001-07',
+   inicio:'01/11/2023',termino:'01/12/2028',padrao:'Alto',
+   detalhes:'Edifício residencial alto padrão com 34 pavimentos, 68 unidades (158–246 m²), 2–3 vagas/apto. Fachada em pintura e guarda-corpo em vidro. Executando vários estágios simultaneamente.',
+   contato:'Gisele',cargo:'Compradora / Materiais',
+   tel:'(47) 3348-4106',
+   tel2:'(47) 99988-1889',
+   email:'compras@d6empreendimentos.com.br',
+   contatos:[
+     {nome:'Gisele',cargo:'Compradora / Materiais',tel:'(47) 3348-4106 / (47) 99988-1889',email:'compras@d6empreendimentos.com.br'},
+     {nome:'Valter',cargo:'Engenheiro(a) Responsável',tel:'(47) 3348-4106',email:'engenharia@d6empreendimentos.com.br'},
+     {nome:'Vitoria',cargo:'Comercial / Contato',tel:'(47) 3348-4106',email:'comercial@d6empreendimentos.com.br'},
+     {nome:'Wisla',cargo:'Assistente Comercial',tel:'(47) 3348-4106',email:'—'},
+   ],
+   m2:246*68,status:'Novo',vendedor:'',lat:-26.91,lng:-48.66},
+
+  // ── OBRAS SIMULADAS (pipeline de exemplo) ──────────────────────────────
+  {id:4,nome:'Shopping Bela Vista',tipo:'nova',fase:'Acabamento',segmento:'COMERCIAL',cidade:'Curitiba',uf:'PR',empresa:'—',contato:'Ana Rodrigues',cargo:'Ger. Compras',tel:'(41) 99811-2233',email:'ana@construtora.com.br',contatos:[{nome:'Ana Rodrigues',cargo:'Ger. Compras',tel:'(41) 99811-2233',email:'ana@construtora.com.br'}],m2:12400,status:'Novo',vendedor:'',lat:-25.43,lng:-49.27},
+  {id:5,nome:'Hospital São Marcos',tipo:'nova',fase:'Acabamento',segmento:'SAÚDE',cidade:'Recife',uf:'PE',empresa:'—',contato:'Fábio Menezes',cargo:'Ger. Engenharia',tel:'(81) 98722-4411',email:'fabio@hospital.com.br',contatos:[{nome:'Fábio Menezes',cargo:'Ger. Engenharia',tel:'(81) 98722-4411',email:'fabio@hospital.com.br'}],m2:8200,status:'Proposta',vendedor:'',lat:-8.05,lng:-34.88},
+  {id:6,nome:'Torre Faria Lima',tipo:'nova',fase:'Estrutura',segmento:'COMERCIAL',cidade:'São Paulo',uf:'SP',empresa:'—',contato:'Carla Braga',cargo:'Dir. Projetos',tel:'(11) 97633-5522',email:'carla@torre.com.br',contatos:[{nome:'Carla Braga',cargo:'Dir. Projetos',tel:'(11) 97633-5522',email:'carla@torre.com.br'}],m2:22000,status:'Novo',vendedor:'',lat:-23.56,lng:-46.69},
+  {id:7,nome:'Galpão Logístico CB',tipo:'reforma',fase:'Acabamento',segmento:'INDUSTRIAL',cidade:'Campinas',uf:'SP',empresa:'—',contato:'Rodrigo Lima',cargo:'Ger. Facilities',tel:'(19) 99511-6644',email:'rodrigo@logistica.com.br',contatos:[{nome:'Rodrigo Lima',cargo:'Ger. Facilities',tel:'(19) 99511-6644',email:'rodrigo@logistica.com.br'}],m2:6800,status:'Novo',vendedor:'',lat:-22.91,lng:-47.06},
+  {id:8,nome:'Aeroporto Palmas — Reform.',tipo:'reforma',fase:'Acabamento',segmento:'INFRAESTRUTURA',cidade:'Palmas',uf:'TO',empresa:'—',contato:'Simone Castro',cargo:'Ger. Contratos',tel:'(63) 98422-3300',email:'simone@aeroporto.gov.br',contatos:[{nome:'Simone Castro',cargo:'Ger. Contratos',tel:'(63) 98422-3300',email:'simone@aeroporto.gov.br'}],m2:4500,status:'Proposta',vendedor:'',lat:-10.19,lng:-48.33},
+  {id:9,nome:'Condomínio Verde',tipo:'nova',fase:'Acabamento',segmento:'RESIDENCIAL',cidade:'Belo Horizonte',uf:'MG',empresa:'—',contato:'Eduardo Pires',cargo:'Ger. Obras',tel:'(31) 99433-7711',email:'eduardo@condo.com.br',contatos:[{nome:'Eduardo Pires',cargo:'Ger. Obras',tel:'(31) 99433-7711',email:'eduardo@condo.com.br'}],m2:5600,status:'Ganho',vendedor:'',lat:-19.92,lng:-43.94},
+  {id:10,nome:'Centro Médico Goiás',tipo:'ampliacao',fase:'Estrutura',segmento:'SAÚDE',cidade:'Goiânia',uf:'GO',empresa:'—',contato:'Tatiane Alves',cargo:'Ger. Compras',tel:'(62) 99344-8822',email:'tatiane@centromedico.com.br',contatos:[{nome:'Tatiane Alves',cargo:'Ger. Compras',tel:'(62) 99344-8822',email:'tatiane@centromedico.com.br'}],m2:3200,status:'Novo',vendedor:'',lat:-16.68,lng:-49.25},
+  {id:11,nome:'POA Tech Hub',tipo:'nova',fase:'Fundação',segmento:'COMERCIAL',cidade:'Porto Alegre',uf:'RS',empresa:'—',contato:'Marcelo Sousa',cargo:'Dir. Engenharia',tel:'(51) 99255-9933',email:'marcelo@techpoa.com.br',contatos:[{nome:'Marcelo Sousa',cargo:'Dir. Engenharia',tel:'(51) 99255-9933',email:'marcelo@techpoa.com.br'}],m2:9000,status:'Novo',vendedor:'',lat:-30.03,lng:-51.23},
+  {id:12,nome:'Parque Industrial Barueri',tipo:'nova',fase:'Acabamento',segmento:'INDUSTRIAL',cidade:'Barueri',uf:'SP',empresa:'—',contato:'Patricia Nunes',cargo:'Ger. Facilities',tel:'(11) 98988-2266',email:'patricia@parqueindustrial.com.br',contatos:[{nome:'Patricia Nunes',cargo:'Ger. Facilities',tel:'(11) 98988-2266',email:'patricia@parqueindustrial.com.br'}],m2:18000,status:'Proposta',vendedor:'',lat:-23.51,lng:-46.88},
+  {id:13,nome:'Shopping Iguatemi Fortaleza',tipo:'ampliacao',fase:'Acabamento',segmento:'COMERCIAL',cidade:'Fortaleza',uf:'CE',empresa:'—',contato:'Carlos Moura',cargo:'Ger. Contratos',tel:'(85) 98899-3377',email:'carlos@iguatemi.com.br',contatos:[{nome:'Carlos Moura',cargo:'Ger. Contratos',tel:'(85) 98899-3377',email:'carlos@iguatemi.com.br'}],m2:15000,status:'Novo',vendedor:'',lat:-3.72,lng:-38.54},
+  {id:14,nome:'Clínica São Lucas',tipo:'reforma',fase:'Estrutura',segmento:'SAÚDE',cidade:'Florianópolis',uf:'SC',empresa:'—',contato:'André Machado',cargo:'Dir. Admin.',tel:'(48) 98721-5599',email:'andre@clinica.com.br',contatos:[{nome:'André Machado',cargo:'Dir. Admin.',tel:'(48) 98721-5599',email:'andre@clinica.com.br'}],m2:1900,status:'Novo',vendedor:'',lat:-27.59,lng:-48.55},
+  {id:15,nome:'Alphaville 5',tipo:'nova',fase:'Acabamento',segmento:'RESIDENCIAL',cidade:'São Paulo',uf:'SP',empresa:'—',contato:'Beatriz Cardoso',cargo:'Ger. Projetos',tel:'(11) 98632-6600',email:'beatriz@alphaville.com.br',contatos:[{nome:'Beatriz Cardoso',cargo:'Ger. Projetos',tel:'(11) 98632-6600',email:'beatriz@alphaville.com.br'}],m2:8700,status:'Perdido',vendedor:'',lat:-23.47,lng:-46.85},
+
+  // ── CENTRO-OESTE ──────────────────────────────────────────────────────────
+  {id:16,intec:true,codigo:'634421',nome:'Outlet Centro Oeste Express 44',tipo:'nova',fase:'Acabamento',segmento:'COMERCIAL – SHOPPINGS',cidade:'Goiânia',uf:'GO',empresa:'J.A.Baggio Construções / Grupo Centro Oeste',detalhes:'400 lojas no estilo galeria. Obras finais de acabamento. R$ 30 milhões.',contato:'Daniele Ribeiro',cargo:'Suprimentos – Baggio Construtora',tel:'(41) 3025-6111',email:'danieleribeiro@construtorabaggio.com.br',contatos:[{nome:'Daniele Ribeiro',cargo:'Suprimentos',tel:'(41) 3025-6111',email:'danieleribeiro@construtorabaggio.com.br'},{nome:'Dantara',cargo:'Comprador',tel:'(19) 3255-6263',email:'dantara@construtorabaggio.com.br'},{nome:'Laura Cancian',cargo:'Comprador',tel:'(41) 3025-6111',email:'laura@construtorabaggio.com.br'},{nome:'José Americo',cargo:'Diretor Geral',tel:'(41) 3025-6111',email:'joseamerico@construtorabaggio.com.br'}],m2:0,status:'Novo',vendedor:'',lat:-16.68,lng:-49.25},
+
+  {id:17,intec:true,codigo:'576353',nome:'Shopping Sinop',tipo:'nova',fase:'Acabamento',segmento:'COMERCIAL – SHOPPINGS',cidade:'Sinop',uf:'MT',empresa:'Construtora Lindóia / AD Shoppings',detalhes:'40.061 m² área construída. 118 lojas, 5 cinemas, 1.591 vagas. R$ 138 milhões.',contato:'Robson',cargo:'Comprador – Lindóia Construtora',tel:'(66) 9-9956-7175',email:'compras@construtoralindoia.com.br',contatos:[{nome:'Robson',cargo:'Comprador',tel:'(66) 9-9956-7175',email:'compras@construtoralindoia.com.br'},{nome:'Alfonso Borges',cargo:'Diretor Comercial',tel:'—',email:'alfonso.borges@construtoralindoia.com.br'},{nome:'Bernardo Neto',cargo:'Engenheiro e Suprimentos – Mada',tel:'—',email:'b.jneto@madaengenharia.com.br'}],m2:40061,status:'Novo',vendedor:'',lat:-11.86,lng:-55.50},
+
+  {id:18,intec:true,codigo:'616142',nome:'Templo – Igreja de Jesus Cristo dos Santos',tipo:'nova',fase:'Estrutura',segmento:'CULTURAL – RELIGIOSO',cidade:'Brasília',uf:'DF',empresa:'Afonso França Engenharia / LDS Church',detalhes:'24.000 m² de área implantada + 20.000 m² área pública. R$ 96 milhões.',contato:'Cibele Grechi Silva',cargo:'Suprimentos – Afonso França',tel:'(11) 3674-0666',email:'cibele.grechi@afonsofranca.com.br',contatos:[{nome:'Cibele Grechi Silva',cargo:'Suprimentos',tel:'(11) 3674-0666',email:'cibele.grechi@afonsofranca.com.br'},{nome:'Fernanda Correa Marforio',cargo:'Gerente de Suprimentos',tel:'—',email:'fernanda.marforio@afonsofranca.com.br'},{nome:'José de Arimatéia',cargo:'Administrativo de Obra',tel:'—',email:'arimateia@afonsofranca.com.br'}],m2:24000,status:'Novo',vendedor:'',lat:-15.78,lng:-47.93},
+
+  {id:19,intec:true,codigo:'634444',nome:'Unidade Assaí – Vila Operária',tipo:'nova',fase:'Acabamento',segmento:'COMERCIAL – ATACADISTA',cidade:'Rondonópolis',uf:'MT',empresa:'Succespar / Assaí Atacadista',detalhes:'49.000 m² de área total, 14.500 m² edificada. 2ª loja no município. R$ 100 milhões.',contato:'Rosilene Cochaba',cargo:'Compradora – Succespar',tel:'(11) 5035-1866',email:'suprimentos@succespar.com.br',contatos:[{nome:'Rosilene Cochaba',cargo:'Compradora',tel:'—',email:'suprimentos@succespar.com.br'},{nome:'César Augusto Pires Viana',cargo:'Diretor Presidente',tel:'(11) 5035-1866',email:'cesar.viana@succespar.com.br'},{nome:'Karen Cassiano',cargo:'Gerente de Projetos – Assaí',tel:'—',email:'karen.cassiano@assai.com.br'}],m2:14500,status:'Novo',vendedor:'',lat:-16.47,lng:-54.64},
+
+  {id:20,intec:true,codigo:'607100',nome:'Ampliação Centro Universitário UniEvangélica',tipo:'ampliacao',fase:'Acabamento',segmento:'EDUCACIONAL',cidade:'Anápolis',uf:'GO',empresa:'UniEvangélica',detalhes:'Prédio de 7 andares para Pós-Graduação + ampliação de 4 pavimentos. R$ 7 milhões.',contato:'Adriano de Souza',cargo:'Coord. de Obras e Compras',tel:'(62) 3329-0858',email:'adriano@unievangelica.edu.br',contatos:[{nome:'Adriano de Souza',cargo:'Coordenador de Obras e Compras',tel:'(62) 3329-0858',email:'adriano@unievangelica.edu.br'}],m2:0,status:'Novo',vendedor:'',lat:-16.33,lng:-48.95},
+
+  // ── NORTE ─────────────────────────────────────────────────────────────────
+  {id:21,intec:true,codigo:'636527',nome:'Complexo Logístico LOG Commercial',tipo:'nova',fase:'Acabamento',segmento:'INDUSTRIAL – LOGÍSTICA',cidade:'Benevides',uf:'PA',empresa:'LOG Commercial Properties',detalhes:'90.000 m² de área construída. Obras finais de acabamento. R$ 135 milhões.',contato:'Edie Barcala',cargo:'Gerente de Suprimentos',tel:'(31) 3615-8423',email:'suprimentos@logcp.com.br',contatos:[{nome:'Edie Barcala',cargo:'Gerente de Suprimentos',tel:'(31) 3615-8423',email:'suprimentos@logcp.com.br'},{nome:'Aline Maciel de Brito',cargo:'Compradora',tel:'—',email:'aline.brito@logcp.com.br'},{nome:'Rodrigo Lima',cargo:'Engenheiro de Obra',tel:'—',email:'rodrigo.ilima@logcp.com.br'}],m2:90000,status:'Novo',vendedor:'',lat:-1.36,lng:-48.24},
+
+  {id:22,intec:true,codigo:'618324',nome:'Expansão Shopping Cidade Leste',tipo:'ampliacao',fase:'Acabamento',segmento:'COMERCIAL – SHOPPINGS',cidade:'Manaus',uf:'AM',empresa:'Shopping Cidade Leste / Weck Engenharia',detalhes:'Expansão de 14.800 m². Cinema + clube com piscina. R$ 34,8 milhões.',contato:'Hélcio Marques',cargo:'Diretor de Obras e Suprimentos',tel:'(92) 3638-5472',email:'financeiro@shoppingcidadeleste.com.br',contatos:[{nome:'Hélcio Marques',cargo:'Diretor de Obras e Suprimentos',tel:'(92) 3638-5472',email:'—'},{nome:'Naiara Ribeiro',cargo:'Compradora',tel:'—',email:'financeiro@shoppingcidadeleste.com.br'}],m2:14800,status:'Novo',vendedor:'',lat:-3.10,lng:-60.02},
+
+  {id:23,intec:true,codigo:'637328',nome:'Unidade Assaí Atacadista – Porto Velho',tipo:'nova',fase:'Fundação',segmento:'COMERCIAL – ATACADISTA',cidade:'Porto Velho',uf:'RO',empresa:'R1 Engenharia / Assaí Atacadista',detalhes:'Antigo campus da Fatec. Obras iniciais. R$ 60 milhões.',contato:'Leandro Carneiro',cargo:'Comprador – R1 Engenharia',tel:'(62) 3242-0433',email:'compras@r1engenharia.com.br',contatos:[{nome:'Leandro Carneiro',cargo:'Comprador',tel:'(62) 3242-0433',email:'compras@r1engenharia.com.br'},{nome:'Francisco Morilha',cargo:'Engenheiro',tel:'—',email:'francisco.morilha@r1engenharia.com.br'},{nome:'Karen Cassiano',cargo:'Gerente de Projetos – Assaí',tel:'—',email:'karen.cassiano@assai.com.br'}],m2:0,status:'Novo',vendedor:'',lat:-8.76,lng:-63.90},
+
+  {id:24,intec:true,codigo:'632730',nome:'Centro de Distribuição – Pão da Hora',tipo:'nova',fase:'Fundação',segmento:'INDUSTRIAL – ALIMENTOS',cidade:'Palmas',uf:'TO',empresa:'Pão da Hora Comércio e Indústria',detalhes:'R$ 35 milhões. Obras iniciais, fundações em andamento.',contato:'André Fonseca',cargo:'Diretor',tel:'(63) 3313-2217',email:'—',contatos:[{nome:'André Fonseca',cargo:'Diretor',tel:'(63) 3313-2217',email:'—'},{nome:'Antonio Carvalho Gomes',cargo:'Comprador',tel:'(63) 3217-2006',email:'—'}],m2:0,status:'Novo',vendedor:'',lat:-10.19,lng:-48.33},
+
+  // ── NORDESTE ──────────────────────────────────────────────────────────────
+  {id:25,intec:true,codigo:'630017',nome:'Home Center Ferreira Costa – Natal',tipo:'reforma',fase:'Acabamento',segmento:'COMERCIAL – HOME CENTER',cidade:'Natal',uf:'RN',empresa:'Ferreira Costa & Cia',detalhes:'Adaptação do antigo Hiper Bompreço. 20.000 m². R$ 40 milhões.',contato:'João Marcelo Araújo',cargo:'Gerente de Obras',tel:'(81) 3338-8363',email:'joao.araujo@ferreiracosta.com.br',contatos:[{nome:'João Marcelo Araújo',cargo:'Gerente de Obras',tel:'(81) 3338-8363',email:'joao.araujo@ferreiracosta.com.br'},{nome:'Nicolle Lima',cargo:'Assistente de Expansão',tel:'—',email:'nicolle.lima@ferreiracosta.com.br'}],m2:20000,status:'Novo',vendedor:'',lat:-5.80,lng:-35.21},
+
+  {id:26,intec:true,codigo:'637754',nome:'Centro de Distribuição – Império Móveis',tipo:'nova',fase:'Fundação',segmento:'INDUSTRIAL – LOGÍSTICA',cidade:'Igarassu',uf:'PE',empresa:'Roccia Construções / Império Móveis e Eletro',detalhes:'58.000 m² de área construída. Alta capacidade de estocagem. R$ 70 milhões.',contato:'Alexandre Marques',cargo:'Diretor de Engenharia – Roccia',tel:'(81) 3198-4803',email:'alexandre@rocciaconstrucoes.com.br',contatos:[{nome:'Alexandre Marques',cargo:'Diretor de Engenharia',tel:'(81) 3198-4803',email:'alexandre@rocciaconstrucoes.com.br'},{nome:'Adriano Almeida',cargo:'Comprador – Império Móveis',tel:'—',email:'adriano.almeida@lojasimperio.com.br'}],m2:58000,status:'Novo',vendedor:'',lat:-7.83,lng:-34.90},
+
+  {id:27,intec:true,codigo:'637909',nome:'Nova Unidade Novo Atacarejo – Dois Irmãos',tipo:'nova',fase:'Acabamento',segmento:'COMERCIAL – ATACAREJO',cidade:'Recife',uf:'PE',empresa:'Grupo SFA / Novo Atacarejo',detalhes:'6.000 m² área de vendas, 32 check-outs, 14.000 m² total. R$ 100 milhões.',contato:'Paulo Silva',cargo:'Suprimentos – Grupo SFA',tel:'(31) 3078-9721',email:'paulo.silva@gruposfa.com.br',contatos:[{nome:'Paulo Silva',cargo:'Suprimentos',tel:'(31) 3078-9721',email:'paulo.silva@gruposfa.com.br'},{nome:'Guilherme Bretas',cargo:'Engenheiro',tel:'—',email:'guilherme.bretas@gruposfa.com.br'}],m2:14000,status:'Novo',vendedor:'',lat:-8.05,lng:-34.88},
+
+  {id:28,intec:true,codigo:'635131',nome:'CD Amazon – Readequação',tipo:'reforma',fase:'Acabamento',segmento:'INDUSTRIAL – E-COMMERCE',cidade:'Fortaleza',uf:'CE',empresa:'Diase Construtora / Amazon',detalhes:'12 hectares, mais de 40.000 m² cobertos. CD da Amazon. R$ 24 milhões.',contato:'Patricia Boletini',cargo:'Engenheira de Suprimentos – Diase',tel:'(11) 4195-4898',email:'pboletini@diase.com.br',contatos:[{nome:'Patricia Boletini',cargo:'Engenheira de Suprimentos',tel:'(11) 4195-4898',email:'pboletini@diase.com.br'},{nome:'Rodrigo Souza',cargo:'Comprador',tel:'(11) 4195-4898',email:'rsouza@diase.com.br'}],m2:40000,status:'Novo',vendedor:'',lat:-3.72,lng:-38.54},
+
+  {id:29,intec:true,codigo:'621785',nome:'Recife Outlet Premium',tipo:'nova',fase:'Acabamento',segmento:'COMERCIAL – OUTLET',cidade:'Moreno',uf:'PE',empresa:'Correia & Peixoto / Grupo BCI',detalhes:'ABL 13.000 m². 66 lojas + praça alimentação. 650 vagas. R$ 65 milhões.',contato:'Lauro Moreira',cargo:'Comprador – Correia & Peixoto',tel:'(81) 3445-2090',email:'lauro@correiaepeixoto.com.br',contatos:[{nome:'Lauro Moreira',cargo:'Comprador',tel:'(81) 3445-2090',email:'lauro@correiaepeixoto.com.br'},{nome:'Herbert',cargo:'Engenheiro',tel:'—',email:'herbert@correiaepeixoto.com.br'}],m2:13000,status:'Novo',vendedor:'',lat:-8.12,lng:-35.09},
+
+  {id:30,intec:true,codigo:'635485',nome:'Shopping Jequitibá',tipo:'nova',fase:'Fundação',segmento:'COMERCIAL – SHOPPINGS',cidade:'Ilhéus',uf:'BA',empresa:'Jequitibá Plaza Shopping',detalhes:'10.000 m² área construída, 5.000 m² ABL, 120 vagas. R$ 70 milhões.',contato:'Cintia Luize',cargo:'Assistente de Expansão',tel:'(73) 3214-0500',email:'cintia.luize@shoppingjequitiba.com.br',contatos:[{nome:'Cintia Luize',cargo:'Assistente de Expansão',tel:'(73) 3214-0500',email:'cintia.luize@shoppingjequitiba.com.br'},{nome:'Manoel Chave Neto',cargo:'Diretor',tel:'—',email:'—'}],m2:10000,status:'Novo',vendedor:'',lat:-14.79,lng:-39.04},
+
+  // ── SUDESTE ───────────────────────────────────────────────────────────────
+  {id:31,intec:true,codigo:'556159',nome:'Unidade Sesc Limeira',tipo:'nova',fase:'Fundação',segmento:'EDUCACIONAL – SERVIÇOS',cidade:'Limeira',uf:'SP',empresa:'Sial Engenharia / Sesc SP',detalhes:'19.000 m² cobertos + 3.100 m² descobertos. R$ 60 milhões. Término 2024.',contato:'João Alves Júnior',cargo:'Comprador – Sial Engenharia',tel:'(41) 3343-2550',email:'junior@sial.eng.br',contatos:[{nome:'João Alves Júnior',cargo:'Comprador',tel:'(41) 3343-2550',email:'junior@sial.eng.br'},{nome:'Ernandes Rossi',cargo:'Coord. de Compras',tel:'(41) 3343-2550',email:'ernandes@sial.eng.br'},{nome:'Carlos German',cargo:'Diretor de Obras',tel:'(41) 3343-2550',email:'carlos@sial.eng.br'}],m2:19000,status:'Novo',vendedor:'',lat:-22.57,lng:-47.40},
+
+  {id:32,intec:true,codigo:'629238',nome:'Unidade Operacional Sest Senat – Betim',tipo:'nova',fase:'Acabamento',segmento:'EDUCACIONAL – PÚBLICO',cidade:'Betim',uf:'MG',empresa:'Monteiro Construtora / Sest Senat',detalhes:'1.889 m² construídos. Obras finais. R$ 6,8 milhões.',contato:'Judson R. Brito',cargo:'Gerente de Compras – Monteiro',tel:'(61) 3551-6713',email:'compras@construtoramonteiro.com.br',contatos:[{nome:'Judson R. Brito',cargo:'Gerente de Compras',tel:'(61) 3551-6713',email:'compras@construtoramonteiro.com.br'},{nome:'Fabrício Dias',cargo:'Gerente de Obras',tel:'—',email:'fabricio@construtoramonteiro.com.br'}],m2:1889,status:'Novo',vendedor:'',lat:-19.97,lng:-44.19},
+
+  // ── SUL ───────────────────────────────────────────────────────────────────
+  {id:33,intec:true,codigo:'626894',nome:'Shopping Complexo Piazza Salton',tipo:'nova',fase:'Acabamento',segmento:'COMERCIAL – SHOPPINGS',cidade:'Bento Gonçalves',uf:'RS',empresa:'Poletto Engenharia / Bripaza / Salton',detalhes:'10.000 m² comercial, âncoras Renner e McDonald\'s, 1.500 vagas. R$ 27,5 milhões.',contato:'Marcelo Santorio',cargo:'Comprador – Poletto Engenharia',tel:'(54) 3452-3530',email:'marcelo@poletto.com.br',contatos:[{nome:'Marcelo Santorio',cargo:'Comprador',tel:'(54) 3452-3530',email:'marcelo@poletto.com.br'},{nome:'Antônio Poletto Filho',cargo:'Diretor',tel:'(54) 3452-3530',email:'antonio@poletto.com.br'},{nome:'Fernanda Feil',cargo:'Suprimentos – Bripaza',tel:'(54) 3454-1417',email:'fernanda@bripaza.com.br'}],m2:10000,status:'Novo',vendedor:'',lat:-29.17,lng:-51.52},
+
+  {id:34,intec:true,codigo:'635579',nome:'Unidade Atacarejo Giassi',tipo:'nova',fase:'Fundação',segmento:'COMERCIAL – ATACAREJO',cidade:'São José',uf:'SC',empresa:'Giassi & Cia Supermercados',detalhes:'Expansão no estado de SC. R$ 40 milhões.',contato:'Luiz Antônio Maciel',cargo:'Assessor de Patrimônio',tel:'(48) 3461-3486',email:'luiz.maciel@giassi.com.br',contatos:[{nome:'Luiz Antônio Maciel',cargo:'Assessor de Patrimônio',tel:'(48) 3461-3486',email:'luiz.maciel@giassi.com.br'},{nome:'Antonio Zanette',cargo:'Diretor de Patrimônio',tel:'—',email:'bita@giassi.com.br'}],m2:0,status:'Novo',vendedor:'',lat:-27.61,lng:-48.64},
+
+  {id:35,intec:true,codigo:'636788',nome:'Supermercado Stok Center – Zaffari',tipo:'nova',fase:'Fundação',segmento:'COMERCIAL – SUPERMERCADOS',cidade:'Santa Cruz do Sul',uf:'RS',empresa:'Comercial Zaffari',detalhes:'13.000 m². R$ 40 milhões.',contato:'Wagner Teixeira Rodrigues',cargo:'Comprador – Zaffari',tel:'(54) 3311-3079',email:'engcompras2@zaffarinet.com.br',contatos:[{nome:'Wagner Teixeira Rodrigues',cargo:'Comprador',tel:'(54) 3311-3079',email:'engcompras2@zaffarinet.com.br'},{nome:'Augusto Zimmermann',cargo:'Comprador',tel:'(54) 3311-3079',email:'engcompras3@zaffarinet.com.br'}],m2:13000,status:'Novo',vendedor:'',lat:-29.72,lng:-52.43},
+
+  {id:36,intec:true,codigo:'633075',nome:'Supermercado Bistek – Cocal do Sul',tipo:'nova',fase:'Acabamento',segmento:'COMERCIAL – SUPERMERCADOS',cidade:'Cocal do Sul',uf:'SC',empresa:'Bistek Supermercados',detalhes:'Nova loja programa de expansão no Sul. R$ 30 milhões.',contato:'Fernanda Magagnin',cargo:'Arquiteta – Bistek',tel:'(48) 3431-1249',email:'engenharia@bistek.com.br',contatos:[{nome:'Fernanda Magagnin',cargo:'Arquiteta e Engenharia',tel:'(48) 3431-1249',email:'engenharia@bistek.com.br'}],m2:0,status:'Novo',vendedor:'',lat:-28.59,lng:-49.32},
+];
+// ── USUÁRIOS v1.7 — apenas usuários reais ────────────────────────
+const USUARIOS = [
+  {ini:'HU',nome:'Humberto',tipo:'gestor', senha:'221214',tel:'11940318727',cor:'#C0321A',  region:'Gestor'},
+  {ini:'RO',nome:'Robson',  tipo:'vendedor',senha:'854269',tel:'11991999315',cor:'#5E2DBF',region:'Sul, Sudeste'},
+  {ini:'LN',nome:'Leandro', tipo:'vendedor',senha:'867219',tel:'11961950193',cor:'#1C7A3F',region:'Sul, Sudeste'},
+  {ini:'FA',nome:'Fabio',   tipo:'vendedor',senha:'806271',tel:'11943598789',cor:'#D95F1A',region:'Sul, Sudeste'},
+];
+const GESTOR = USUARIOS[0];
+const PIN_GESTOR = '221214';
+
+// ── TIME COMERCIAL v1.7 ───────────────────────────────────────────
+const TEAM = USUARIOS.filter(u=>u.tipo==='vendedor').map(u=>({
+  ini:u.ini, nome:u.nome, region:u.region,
+  obras:0, meta:40, cor:u.cor, tel:u.tel
+}));
+
+// ── SISTEMA DE BLOQUEIO v1.7 ──────────────────────────────────────
+const LOCKOUT_KEY = 'obraradar_lockout';
+const MAX_TENTATIVAS = 3;
+const LOCKOUT_MS = 30 * 60 * 1000; // 30 minutos
+
+function verificarBloqueio(nome){
+  try {
+    const d = JSON.parse(localStorage.getItem(LOCKOUT_KEY)||'{}');
+    const u = d[nome];
+    if(!u) return null;
+    if(u.lockedUntil && Date.now() < u.lockedUntil){
+      const min = Math.ceil((u.lockedUntil - Date.now())/60000);
+      return `Acesso bloqueado. Aguarde ${min} minuto${min>1?'s':''}.`;
+    }
+    return null;
+  } catch(e){ return null; }
+}
+
+function registrarFalha(nome){
+  try {
+    const d = JSON.parse(localStorage.getItem(LOCKOUT_KEY)||'{}');
+    if(!d[nome]) d[nome]={tentativas:0};
+    d[nome].tentativas++;
+    if(d[nome].tentativas >= MAX_TENTATIVAS){
+      d[nome].lockedUntil = Date.now() + LOCKOUT_MS;
+      d[nome].tentativas = 0;
+      localStorage.setItem(LOCKOUT_KEY, JSON.stringify(d));
+      return -1; // bloqueado
+    }
+    localStorage.setItem(LOCKOUT_KEY, JSON.stringify(d));
+    return MAX_TENTATIVAS - d[nome].tentativas; // tentativas restantes
+  } catch(e){ return 0; }
+}
+
+function liberarBloqueio(nome){
+  try {
+    const d = JSON.parse(localStorage.getItem(LOCKOUT_KEY)||'{}');
+    delete d[nome];
+    localStorage.setItem(LOCKOUT_KEY, JSON.stringify(d));
+    showToast(`✓ Acesso de ${nome} liberado`,'success');
+  } catch(e){}
+}
+let CURRENT_USER = null; // {nome, tipo:'gestor'|'vendedor', tel, ini, cor}
+
+function toggleLoginCard(id){
+  const card=document.getElementById(id);
+  const nome=id.replace('card_','');
+  const chev=document.getElementById('chev_'+nome);
+  const isOpen=card.style.display!=='none';
+  document.querySelectorAll('[id^="card_"]').forEach(c=>c.style.display='none');
+  document.querySelectorAll('[id^="chev_"]').forEach(c=>c.className='ti ti-chevron-down');
+  if(!isOpen){card.style.display='block';if(chev)chev.className='ti ti-chevron-up';setTimeout(()=>document.getElementById('pwd_'+nome)?.focus(),100);}
+}
+
+function fazerLogin(nome){
+  const bloqueio=verificarBloqueio(nome);
+  const errEl=document.getElementById('err_'+nome);
+  if(bloqueio){if(errEl){errEl.textContent=bloqueio;errEl.style.display='block';}return;}
+  const senha=document.getElementById('pwd_'+nome)?.value?.trim();
+  const usuario=USUARIOS.find(u=>u.nome===nome);
+  if(!usuario){if(errEl){errEl.textContent='Usuário não encontrado';errEl.style.display='block';}return;}
+  if(senha!==usuario.senha){
+    const restantes=registrarFalha(nome);
+    if(errEl){
+      errEl.textContent=restantes===-1?'🔒 Bloqueado por 30 minutos após 3 tentativas.':`Senha incorreta. ${restantes} tentativa${restantes!==1?'s':''} restante${restantes!==1?'s':''}.`;
+      errEl.style.display='block';
+    }
+    document.getElementById('pwd_'+nome).value='';
+    document.getElementById('pwd_'+nome).focus();
+    return;
+  }
+  liberarBloqueio(nome);
+  CURRENT_USER={nome:usuario.nome,tipo:usuario.tipo,tel:usuario.tel,ini:usuario.ini,cor:usuario.cor};
+  localStorage.setItem('obraradar_user',JSON.stringify(CURRENT_USER));
+  ocultarTelaLogin();aplicarPerfil();filtObras();
+  showToast(`✓ Bem-vindo, ${usuario.nome}!`,'success');
+}
+
+
+// ── RENDER LOGIN CARDS v1.7 ──────────────────────────────────────
+function renderLoginCards(){
+  const container = document.getElementById('loginCards');
+  if(!container){ console.warn('loginCards nao encontrado'); return; }
+  let html = '';
+  for(let i=0; i<USUARIOS.length; i++){
+    const u = USUARIOS[i];
+    const id = 'u'+i; // ID sem espaços
+    const desc = u.tipo==='gestor' ? 'Gestor &middot; Acesso completo' : 'Vendedor &middot; Sul, Sudeste';
+    html += '<div style="border:1px solid #ddd;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)">';
+    html += '<div data-cardid="lcard_'+id+'" onclick="toggleLoginCard(this.dataset.cardid)" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer">';
+    html += '<div style="width:40px;height:40px;border-radius:50%;background:'+u.cor+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">'+u.ini+'</div>';
+    html += '<div style="flex:1"><div style="font-size:14px;font-weight:600;color:#1a1a1a">'+u.nome+'</div>';
+    html += '<div style="font-size:12px;color:#888">'+desc+'</div></div>';
+    html += '<span style="color:#aaa;font-size:18px" id="lchev_'+id+'">&#8964;</span>';
+    html += '</div>';
+    html += '<div id="lcard_'+id+'" style="display:none;padding:0 16px 16px">';
+    html += '<div id="lerr_'+id+'" style="display:none;color:#C0321A;font-size:12px;margin-bottom:8px;padding:8px 12px;background:#FFEAED;border-radius:8px"></div>';
+    html += '<div style="display:flex;gap:8px;align-items:center">';
+    html += '<input id="lpwd_'+id+'" data-nome="'+u.nome+'" type="password" placeholder="Senha" maxlength="10"';
+    html += ' style="flex:1;height:40px;border:1.5px solid #ddd;border-radius:8px;padding:0 14px;font-size:18px;letter-spacing:6px;text-align:center;outline:none"';
+    html += ' onkeydown="if(event.keyCode===13)fazerLoginById(this.dataset.uid)" data-uid="'+id+'">';
+    html += '<button onclick="fazerLoginById(this.dataset.uid)" data-uid="'+id+'"';
+    html += ' style="height:40px;padding:0 20px;background:#1655A8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Entrar</button>';
+    html += '</div></div></div>';
+  }
+  container.innerHTML = html;
+}
+
+function toggleLoginCard(id){
+  const card = document.getElementById(id);
+  if(!card) return;
+  const num = id.replace('lcard_','');
+  const chev = document.getElementById('lchev_'+num);
+  // Fecha todos
+  document.querySelectorAll('[id^="lcard_"]').forEach(function(c){ c.style.display='none'; });
+  document.querySelectorAll('[id^="lchev_"]').forEach(function(c){ c.textContent='⌄'; });
+  if(card.style.display==='none'||card.style.display===''){
+    card.style.display='block';
+    if(chev) chev.textContent='⌃';
+    setTimeout(function(){ const inp=card.querySelector('input[type=password]'); if(inp)inp.focus(); },100);
+  }
+}
+
+function fazerLoginById(id){
+  const inp = document.getElementById('lpwd_'+id);
+  const errEl = document.getElementById('lerr_'+id);
+  if(!inp) return;
+  const nome = inp.getAttribute('data-nome');
+  const bloqueio = verificarBloqueio(nome);
+  if(bloqueio){
+    if(errEl){ errEl.textContent=bloqueio; errEl.style.display='block'; }
+    return;
+  }
+  const senha = inp.value.trim();
+  const usuario = USUARIOS.find(function(u){ return u.nome===nome; });
+  if(!usuario){ if(errEl){ errEl.textContent='Usuário não encontrado'; errEl.style.display='block'; } return; }
+  if(senha!==usuario.senha){
+    const restantes = registrarFalha(nome);
+    if(errEl){
+      errEl.textContent = restantes===-1 ? 'Bloqueado por 30 minutos.' : 'Senha incorreta. '+restantes+' tentativa(s) restante(s).';
+      errEl.style.display='block';
+    }
+    inp.value=''; inp.focus();
+    return;
+  }
+  liberarBloqueio(nome);
+  CURRENT_USER = {nome:usuario.nome, tipo:usuario.tipo, tel:usuario.tel, ini:usuario.ini, cor:usuario.cor};
+  localStorage.setItem('obraradar_user', JSON.stringify(CURRENT_USER));
+  ocultarTelaLogin();
+  aplicarPerfil();
+  filtObras();
+  showToast('Bem-vindo, '+usuario.nome+'!','success');
+}
+
+function iniciarSessao(){
+  const saved=localStorage.getItem('obraradar_user');
+  if(saved){try{CURRENT_USER=JSON.parse(saved);aplicarPerfil();return;}catch(e){}}
+  mostrarTelaLogin();
+}
+
+function mostrarTelaLogin(){const el=document.getElementById('telaLogin');if(el)el.style.display='flex';renderLoginCards();}
+function ocultarTelaLogin(){const el=document.getElementById('telaLogin');if(el)el.style.display='none';}
+
+function selecionarPerfil(tipo,nome,tel,ini,cor){
+  const u=USUARIOS.find(u=>u.nome===nome);
+  if(u){CURRENT_USER={nome:u.nome,tipo:u.tipo,tel:u.tel,ini:u.ini,cor:u.cor};
+    localStorage.setItem('obraradar_user',JSON.stringify(CURRENT_USER));
+    ocultarTelaLogin();aplicarPerfil();filtObras();}
+}
+
+function aplicarPerfil(){
+  if(!CURRENT_USER)return;
+  const av=document.getElementById('avTopbar');
+  if(av){av.textContent=CURRENT_USER.ini;av.style.background=CURRENT_USER.cor||'#5E2DBF';}
+  const lbl=document.getElementById('perfilLabel');
+  if(lbl)lbl.textContent=`${CURRENT_USER.nome} · ${CURRENT_USER.tipo==='gestor'?'Gestor':'Vendedor'}`;
+  document.querySelectorAll('.gestor-only').forEach(el=>{el.style.display=CURRENT_USER.tipo==='gestor'?'':'none';});
+  document.querySelectorAll('.vendedor-only').forEach(el=>{el.style.display=CURRENT_USER.tipo==='vendedor'?'':'none';});
+}
+
+function trocarPerfil(){
+  CURRENT_USER=null;localStorage.removeItem('obraradar_user');
+  document.querySelectorAll('[id^="card_"]').forEach(c=>c.style.display='none');
+  document.querySelectorAll('[id^="pwd_"]').forEach(c=>c.value='');
+  document.querySelectorAll('[id^="err_"]').forEach(c=>c.style.display='none');
+  mostrarTelaLogin();
+}
+
+function obrasVisiveis(){
+  if(!CURRENT_USER||CURRENT_USER.tipo==='gestor')return OBRAS;
+  return OBRAS.filter(o=>!o.vendedor||o.vendedor===''||o.vendedor===CURRENT_USER.nome);
+}
+
+// ── ATRIBUIÇÃO DE OBRAS v1.6 ──────────────────────────────────────
+async function atribuirObra(obraId){
+  if(!CURRENT_USER || CURRENT_USER.tipo!=='gestor'){
+    showToast('Apenas o gestor pode atribuir obras','error'); return;
+  }
+  const o = OBRAS.find(x=>x.id===obraId);
+  if(!o){ showToast('Obra não encontrada','error'); return; }
+
+  // Cria modal de atribuição
+  const todos = [...TEAM, {ini:'HU',nome:'Humberto',tel:'11940318727',cor:'#C0321A'}];
+  const el = document.createElement('div');
+  el.className='mo open'; el.id='mAtribuir';
+  el.innerHTML=`<div class="mdl" style="max-width:420px">
+    <div class="mtitle">Atribuir obra ao vendedor</div>
+    <div class="mclose" onclick="document.getElementById('mAtribuir').remove()"><i class="ti ti-x" aria-hidden="true"></i></div>
+    <div style="background:var(--bg);border-radius:var(--rs);padding:12px;margin-bottom:14px;font-size:13px">
+      <strong>${o.nome}</strong><br>
+      <span style="color:var(--muted)">${o.cidade}, ${o.uf} · ${o.fase}</span>
+    </div>
+    <div style="font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px">Selecione o vendedor:</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${todos.map(v=>`
+        <button onclick="confirmarAtribuicao(${obraId},'${v.nome}','${v.tel}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border-md);border-radius:var(--rs);background:var(--card);cursor:pointer;text-align:left;transition:all .15s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='var(--card)'">
+          <div style="width:32px;height:32px;border-radius:50%;background:${v.cor||'#5E2DBF'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${v.ini}</div>
+          <div><div style="font-size:13px;font-weight:500;color:var(--text)">${v.nome}</div><div style="font-size:11px;color:var(--muted)">${v.region||'Sul, Sudeste'}</div></div>
+        </button>`).join('')}
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-s" onclick="document.getElementById('mAtribuir').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click',e=>{if(e.target===el){el.remove();}});
+}
+
+async function confirmarAtribuicao(obraId, nomeVendedor, telVendedor){
+  const o = OBRAS.find(x=>x.id===obraId);
+  if(!o) return;
+  o.vendedor = nomeVendedor;
+  o.status = o.status==='Novo'?'Em contato':o.status;
+
+  // Salva no Supabase se conectado
+  if(SB_READY && sb){
+    await sb.from('obras').update({vendedor:nomeVendedor,status:o.status,updated_at:new Date().toISOString()}).eq('id',obraId);
+    await sb.from('alertas').insert({
+      tipo:'info',icone:'ti-user-check',
+      titulo:`Obra atribuída a você: ${o.nome}`,
+      sub:`${o.cidade}, ${o.uf} · ${o.fase} · Gestor: Humberto`,
+      lido:false
+    });
+  }
+
+  // Remove modal de atribuição
+  document.getElementById('mAtribuir')?.remove();
+
+  // Mensagem WhatsApp
+  const tel = telVendedor.replace(/\D/g,'');
+  const msg = encodeURIComponent(
+    `*ObraRadar — Novo cliente atribuído* 🏗️\n\n` +
+    `Olá ${nomeVendedor}! Uma obra foi atribuída a você:\n\n` +
+    `*${o.nome}*\n` +
+    `📍 ${o.cidade}, ${o.uf}\n` +
+    `🏗️ Fase: ${o.fase}\n` +
+    `🏢 ${o.empresa||'—'}\n` +
+    `📞 Contato: ${o.contato||'—'} · ${o.tel||'—'}\n\n` +
+    `Acesse o ObraRadar para ver todos os detalhes e registrar seus contatos.`
+  );
+  window.open(`https://wa.me/55${tel}?text=${msg}`,'_blank');
+
+  showToast(`✓ Obra atribuída a ${nomeVendedor} · WhatsApp enviado!`,'success');
+  closeM();
+  filtObras();
+}
+
+// ── RADAR DE OBRAS v1.6 ───────────────────────────────────────────
+const RADAR_KEYWORDS = [
+  'novo centro de distribuição Sul', 'novo galpão logístico Sudeste',
+  'nova fábrica São Paulo', 'expansão industrial Paraná',
+  'novo frigorífico Santa Catarina', 'construção shopping Minas Gerais',
+  'novo hospital Rio de Janeiro', 'expansão CD Rio Grande do Sul',
+  'licitação galpão SP PR SC RS MG RJ'
+];
+
+async function rodarRadar(){
+  if(!CURRENT_USER || CURRENT_USER.tipo!=='gestor'){
+    showToast('Radar disponível apenas para o gestor','error'); return;
+  }
+  const btn = document.getElementById('btnRadar');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader" aria-hidden="true" style="animation:spin .7s linear infinite"></i> Varrendo...';}
+  showToast('Iniciando varredura de obras Sul/Sudeste...','info');
+
+  const prompt = `Gere exatamente 5 leads realistas de obras em construção no Sul e Sudeste do Brasil (SP, RJ, MG, PR, SC, RS).
+Foco em: galpões logísticos, centros de distribuição, frigoríficos, indústrias, shoppings.
+Retorne SOMENTE o array JSON abaixo, sem nenhum texto antes ou depois:
+[{"nome":"Nome da Obra","cidade":"Cidade","uf":"SP","segmento":"INDUSTRIAL - LOGÍSTICA","fase":"Fundação","empresa":"Empresa Responsável","contato":"Nome Contato","tel":"(11) 9XXXX-XXXX","detalhes":"Descrição breve","potencial":"alto"}]`;
+
+  try {
+    const raw = await callAI(
+      'Você é especialista em inteligência de mercado de construção civil brasileira. Retorne APENAS JSON array válido, sem texto antes ou depois.',
+      prompt, 2000
+    );
+
+    // Parser robusto para arrays
+    let leads = [];
+    try {
+      // Tenta extrair array do texto
+      const start = raw.indexOf('[');
+      const end   = raw.lastIndexOf(']');
+      if(start === -1 || end === -1) throw new Error('Array não encontrado');
+      let txt = raw.slice(start, end+1)
+        .replace(/,\s*([}\]])/g, '$1')  // remove trailing commas
+        .replace(/[\x00-\x1F\x7F]/g, ' '); // remove control chars
+      leads = JSON.parse(txt);
+    } catch(e) {
+      // Fallback: tenta extrair objetos individuais
+      const matches = raw.match(/\{[^{}]+\}/g) || [];
+      for(const m of matches){
+        try { leads.push(JSON.parse(m.replace(/,\s*}/g,'}'))); } catch(e2){}
+      }
+    }
+
+    if(!leads.length){
+      showToast('Radar não encontrou leads válidos. Tente novamente.','warn');
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-radar" aria-hidden="true"></i>Varrer obras agora';}
+      return;
+    }
+
+    let inseridos = 0;
+    for(const lead of leads){
+      if(!lead.nome) continue;
+      const existe = OBRAS.some(o=>o.nome.toLowerCase()===(`[RADAR] ${lead.nome}`).toLowerCase());
+      if(!existe){
+        const novaObra = {
+          id: OBRAS.length + 100 + inseridos,
+          nome: `[RADAR] ${lead.nome}`, tipo:'nova',
+          fase: lead.fase||'Fundação', segmento: lead.segmento||'INDUSTRIAL',
+          cidade: lead.cidade||'—', uf: lead.uf||'SP',
+          empresa: lead.empresa||'—', contato: lead.contato||'—',
+          tel: lead.tel||'—', email:'',
+          detalhes: lead.detalhes||'Lead detectado pelo Radar ObraRadar',
+          m2:0, status:'Novo', vendedor:'', lat:0, lng:0, intec:false, contatos:[]
+        };
+        OBRAS.push(novaObra);
+        if(SB_READY && sb){
+          await sb.from('obras').insert({...novaObra, id:undefined}).select().single()
+            .then(({data})=>{ if(data) novaObra.id=data.id; });
+          await sb.from('alertas').insert({
+            tipo:'info', icone:'ti-radar',
+            titulo:`[RADAR] Nova obra detectada: ${lead.nome}`,
+            sub:`${lead.cidade}, ${lead.uf} · ${lead.segmento} · Potencial: ${lead.potencial||'alto'}`,
+            lido:false
+          });
+        }
+        ALERTAS.unshift({
+          t: lead.potencial==='alto'?'danger':'warn',
+          ic:'ti-radar',
+          tt:`[RADAR] ${lead.nome}`,
+          sb:`${lead.cidade||'—'}, ${lead.uf||'—'} · ${lead.segmento||'—'} · Potencial: ${lead.potencial||'alto'}`,
+          tm:'agora'
+        });
+        inseridos++;
+      }
+    }
+    rendAlertas();
+    filtObras();
+    showToast(`✓ Radar: ${inseridos} novas obras detectadas!`, inseridos>0?'success':'info');
+  } catch(e){
+    showToast('Erro no radar: '+e.message,'error');
+  }
+  if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-radar" aria-hidden="true"></i>Varrer obras agora';}
+}
+
+// ── PNCP — Licitações públicas ────────────────────────────────────
+async function buscarLicitacoesPNCP(){
+  if(!CURRENT_USER || CURRENT_USER.tipo!=='gestor') return;
+  try {
+    const hoje = new Date();
+    const dataFim = hoje.toISOString().split('T')[0].replace(/-/g,'');
+    const dataIni = new Date(hoje - 30*86400000).toISOString().split('T')[0].replace(/-/g,'');
+    const r = await fetch(`https://pncp.gov.br/api/pncp/v1/orgaos/compras?dataInicial=${dataIni}&dataFinal=${dataFim}&pagina=1&tamanhoPagina=20`);
+    if(!r.ok) return;
+    const d = await r.json();
+    const itens = d?.data||[];
+    let novas = 0;
+    for(const item of itens.slice(0,5)){
+      const nome = item.objetoCompra||item.descricao||'Licitação Pública';
+      if(!OBRAS.some(o=>o.nome===`[PNCP] ${nome.slice(0,50)}`)){
+        ALERTAS.unshift({t:'info',ic:'ti-gavel',tt:`[PNCP] ${nome.slice(0,60)}`,sb:`Licitação pública · ${item.ufNome||'BR'} · R$ ${(item.valorEstimado||0).toLocaleString('pt-BR')}`,tm:'agora'});
+        novas++;
+      }
+    }
+    if(novas>0){ rendAlertas(); showToast(`✓ PNCP: ${novas} licitações encontradas!`,'success'); }
+  } catch(e){ console.warn('PNCP indisponível:', e.message); }
+}
+const ALERTAS=[
+  {t:'danger',ic:'ti-door',tt:'[INTEC CO228520] TAYAYÁ RESIDENCE & RESORT — novo lead!',sb:'São Pedro do Paraná, PR · COMERCIAL/TURISMO · Douglas Bontempi (16) 99748-3109',tm:'agora'},
+  {t:'danger',ic:'ti-door',tt:'[INTEC IN007919] ALYNE COSMÉTICOS — nova unidade industrial!',sb:'Maranguape, CE · 4 contatos disponíveis · Gustavo Sousa (85) 3521-8888',tm:'8 min'},
+  {t:'danger',ic:'ti-door',tt:'[INTEC RE040125] D6 OCEAN VIEW — 34 pavimentos em estrutura!',sb:'Itajaí, SC · Alto padrão · Gisele (47) 3348-4106 / compras@d6empreendimentos.com.br',tm:'22 min'},
+  {t:'warn',ic:'ti-clock',tt:'Shopping Bela Vista — fase de acabamento! Ligar hoje.',sb:'Curitiba, PR · 12.400 m² · Verificar responsável',tm:'1h'},
+  {t:'warn',ic:'ti-clock',tt:'Galpão Logístico CB — follow-up vencido há 3 dias',sb:'Campinas, SP · Proposta R$ 48.000 aguardando',tm:'2h'},
+  {t:'info',ic:'ti-building',tt:'Nova obra detectada — Parque Industrial Barueri',sb:'Barueri, SP · 18.000 m² · Fase: Acabamento · Não atribuída',tm:'4h'},
+  {t:'success',ic:'ti-check',tt:'Proposta aceita — Condomínio Verde!',sb:'BH, MG · R$ 84.000 fechado',tm:'5h'},
+];
+const KCOLS=[
+  {k:'Novo',l:'Novo Lead',c:'#1655A8'},
+  {k:'Em contato',l:'1º Contato',c:'#D95F1A'},
+  {k:'Proposta',l:'Proposta Enviada',c:'#5E2DBF'},
+  {k:'Negociação',l:'Negociação',c:'#966010'},
+  {k:'Ganho',l:'Ganho ✓',c:'#1C7A3F'},
+  {k:'Perdido',l:'Perdido ✗',c:'#C0321A'},
+];
+
+function navTo(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  const ne=document.getElementById('nav-'+id);
+  if(ne)ne.classList.add('active');
+  if(id==='dashboard')initDash();
+  if(id==='obras'){document.getElementById('horaObras').textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});rendObras(OBRAS);}
+  if(id==='crm')rendKanban();
+  if(id==='alertas'){document.getElementById('aHora').textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});rendAlertas();}
+  if(id==='time')rendTime();
+  if(id==='relatorios')initRel();
+  if(id==='raio-x'){document.getElementById('rxResult').innerHTML='';document.getElementById('rxInput').value='';}
+}
+
+let mapDone=false,semDone=false;
+const mf={nova:true,ampl:true,ref:true};
+
+function initDash(){
+  rendDAlertas();rendDPrio();rendDFunil();rendDTime();
+  if(!mapDone){initMap();mapDone=true;}
+  if(!semDone){initSem();semDone=true;}
+}
+
+function rendDAlertas(){
+  document.getElementById('dAlertas').innerHTML=ALERTAS.slice(0,4).map(a=>`
+    <div class="ali ${a.t}" style="margin-bottom:6px;padding:8px 10px" onclick="navTo('alertas')">
+      <i class="ti ${a.ic} aico" aria-hidden="true" style="font-size:15px;margin-top:0;color:${a.t==='danger'?'#C0321A':a.t==='warn'?'#966010':a.t==='success'?'#1C7A3F':'#1655A8'}"></i>
+      <div style="flex:1"><div class="atitle" style="font-size:12px">${a.tt}</div><div class="asub" style="font-size:11px">${a.sb}</div></div>
+      <span class="atime">${a.tm}</span>
+    </div>`).join('');
+}
+
+function rendDPrio(){
+  const pc={nova:'#C0321A',ampliacao:'#D95F1A',reforma:'#1655A8'};
+  document.getElementById('dPrio').innerHTML=OBRAS.filter(o=>o.fase==='Acabamento').slice(0,5).map(o=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;background:var(--bg);border-radius:var(--rs);margin-bottom:6px;cursor:pointer" onclick="openObra(${o.id})">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:7px;height:7px;border-radius:50%;background:${pc[o.tipo]};flex-shrink:0"></div>
+        <div><div style="font-size:12px;font-weight:500">${o.nome}</div><div style="font-size:11px;color:var(--muted)">${o.cidade}, ${o.uf}</div></div>
+      </div>
+      <span class="badge bac" style="font-size:10px">Acabamento</span>
+    </div>`).join('');
+}
+
+function rendDFunil(){
+  const d=[{l:'Detectadas',n:3847,c:'#1655A8'},{l:'Atribuídas',n:2770,c:'#5DCAA5'},{l:'1º Contato',n:1847,c:'#7F77DD'},{l:'Interesse',n:1077,c:'#D95F1A'},{l:'Proposta',n:539,c:'#C05528'},{l:'Ganhas',n:319,c:'#1C7A3F'}];
+  document.getElementById('dFunil').innerHTML=d.map(x=>`<div class="fr"><span class="fl">${x.l}</span><div class="fw"><div class="ff" style="width:${Math.round(x.n/3847*100)}%;background:${x.c}"><span class="fn">${x.n.toLocaleString('pt-BR')}</span></div></div><span class="fc">${x.n.toLocaleString('pt-BR')}</span></div>`).join('')+
+  `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>Conversão: <b style="color:var(--text)">8,3%</b></span><span>Ticket: <b style="color:var(--text)">R$ 67.400</b></span></div>`;
+}
+
+function rendTime(){
+  // Usa USUARIOS como fonte da verdade — ignora qualquer dado legado
+  const vendedores = USUARIOS.filter(u=>u.tipo==='vendedor');
+  const filtV = document.getElementById('filtroVendedor');
+  if(filtV){ filtV.innerHTML='<option>Todos os vendedores</option>'+vendedores.map(v=>`<option>${v.nome}</option>`).join(''); }
+  const tHead = document.getElementById('tHead');
+  if(tHead) tHead.textContent=`${vendedores.length} vendedor${vendedores.length!==1?'es':''} · meta: 40 obras/mês`;
+  document.getElementById('tList').innerHTML=vendedores.map(v=>`
+    <div class="tc">
+      <div class="tmav" style="background:${v.cor}">${v.ini}</div>
+      <div><div class="tmn">${v.nome}</div><div class="tmr">Vendedor · ${v.region||'Sul, Sudeste'}</div></div>
+      <div class="tmst">
+        <div class="tm-stat"><div class="tmsv">0</div><div class="tmsl">obras/mês</div></div>
+        <div class="tm-stat"><div class="tmsv">0%</div><div class="tmsl">da meta</div></div>
+        <div class="tm-stat"><div class="tmsv">${OBRAS.filter(o=>o.vendedor===v.nome).length}</div><div class="tmsl">ativas</div></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-left:12px">
+        <button class="btn btn-s btn-sm" onclick="window.open('https://wa.me/55${v.tel}','_blank')"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i></button>
+        <button class="btn btn-p btn-sm" onclick="navTo('obras')">Ver obras</button>
+      </div>
+    </div>`).join('');
+}
+
+function rendDTime(){
+  const vendedores = USUARIOS.filter(u=>u.tipo==='vendedor');
+  const el = document.getElementById('dTime');
+  if(!el) return;
+  el.innerHTML=vendedores.map(v=>`
+    <div class="tr2"><div class="tav" style="background:${v.cor}">${v.ini}</div><div class="tn">${v.nome}</div>
+    <div class="tbw"><div class="tb2" style="width:0%;background:#C0321A"></div></div>
+    <span style="font-size:12px;font-weight:500;min-width:24px;text-align:right;color:#C0321A">0</span>
+    </div>`).join('');
+}
+
+function toggleMF(k,el){
+  mf[k]=!mf[k];
+  if(!mf[k]){el.style.opacity='.4';}else{el.style.opacity='1';}
+  rendPins();
+}
+
+const pc={nova:'#C0321A',ampliacao:'#D95F1A',reforma:'#1655A8'};
+const km={nova:'nova',ampliacao:'ampl',reforma:'ref'};
+
+function llXY(lat,lng){
+  const x=(lng-(-74))/(-34-(-74))*320+50;
+  const y=(lat-5.3)/(-34-5.3)*230+20;
+  return[Math.round(x),Math.round(y)];
+}
+
+function rendPins(){
+  const svg=document.getElementById('mSvg');
+  svg.querySelectorAll('.pin,.pls').forEach(e=>e.remove());
+  OBRAS.forEach(o=>{
+    if(!mf[km[o.tipo]]) return;
+    const[x,y]=llXY(o.lat,o.lng);
+    const cor=pc[o.tipo];
+    const isA=o.fase==='Acabamento';
+    if(isA){
+      const p=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      p.setAttribute('cx',x);p.setAttribute('cy',y);p.setAttribute('r',9);p.setAttribute('fill',cor);p.setAttribute('opacity','0.2');p.setAttribute('class','pls');
+      svg.appendChild(p);
+    }
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','pin');g.style.cursor='pointer';
+    const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',isA?6:4);c.setAttribute('fill',cor);c.setAttribute('stroke','#fff');c.setAttribute('stroke-width','1.5');
+    g.appendChild(c);svg.appendChild(g);
+    g.addEventListener('mouseenter',()=>{
+      const tb=document.getElementById('mTip');
+      tb.innerHTML=`<div class="tip2-t">${o.nome}</div><div class="tip2-r"><span>${o.cidade},${o.uf}</span><span>${o.m2.toLocaleString('pt-BR')}m²</span></div><div class="tip2-r"><span>${o.fase}</span><span>${o.status}</span></div><button onclick="openObra(${o.id})" style="width:100%;margin-top:7px;font-size:11px;padding:4px;border-radius:var(--rs);border:1px solid var(--border-md);background:var(--bg);cursor:pointer">Ver ficha + distribuir ↗</button>`;
+      tb.style.display='block';tb.style.left='8px';tb.style.top='8px';
+    });
+    g.addEventListener('mouseleave',()=>{document.getElementById('mTip').style.display='none';});
+  });
+}
+
+function initMap(){
+  const svg=document.getElementById('mSvg');
+  svg.innerHTML='';
+  const bg=document.createElementNS('http://www.w3.org/2000/svg','rect');
+  bg.setAttribute('width','420');bg.setAttribute('height','270');bg.setAttribute('fill','var(--bg)');bg.setAttribute('rx','6');svg.appendChild(bg);
+  d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(w=>{
+    const proj=d3.geoMercator().center([-52,-15]).scale(540).translate([210,145]);
+    const path=d3.geoPath(proj);
+    topojson.feature(w,w.objects.countries).features.forEach(f=>{
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d',path(f)||'');
+      p.setAttribute('fill',f.id==='076'?'#E0DBD3':'#ECEAE4');
+      p.setAttribute('stroke','rgba(0,0,0,0.09)');p.setAttribute('stroke-width','0.4');
+      svg.appendChild(p);
+    });
+    rendPins();
+  }).catch(()=>rendPins());
+}
+
+let semC=null;
+function initSem(){
+  const ctx=document.getElementById('cSem');if(!ctx)return;
+  const lb=['S01','S02','S03','S04','S05','S06','S07','S08','S09','S10','S11','S12'];
+  semC=new Chart(ctx,{type:'bar',data:{labels:lb,datasets:[
+    {label:'Nova',data:[38,42,35,51,48,44,56,62,58,67,71,124],backgroundColor:'#C0321A',stack:'s'},
+    {label:'Ampliação',data:[18,22,19,24,21,26,28,25,31,29,33,38],backgroundColor:'#D95F1A',stack:'s'},
+    {label:'Reforma',data:[22,19,25,21,28,22,24,31,27,33,29,35],backgroundColor:'#1655A8',stack:'s'},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}}}}});
+}
+
+const tbBadge={nova:'<span class="badge bn">● Nova</span>',ampliacao:'<span class="badge ba">● Ampliação</span>',reforma:'<span class="badge br">● Reforma</span>'};
+const fsBadge={'Acabamento':'<span class="badge bac">Acabamento</span>','Estrutura':'<span class="badge bes">Estrutura</span>','Fundação':'<span class="badge bfu">Fundação</span>'};
+const stBadge={'Novo':'<span class="badge bst0">Novo</span>','Em contato':'<span class="badge bst1">Em contato</span>','Proposta':'<span class="badge bst2">Proposta</span>','Ganho':'<span class="badge bst3">Ganho</span>','Perdido':'<span class="badge bst4">Perdido</span>'};
+
+function rendObras(obras){
+  document.getElementById('oTbody').innerHTML=obras.map(o=>`
+    <tr onclick="openObra(${o.id})">
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="font-weight:500;font-size:13px">${o.nome}</div>
+          ${o.intec?`<span style="background:#E6F1FB;color:#1655A8;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;border:1px solid #A8BFEE;white-space:nowrap">INTEC</span>`:''}
+        </div>
+        ${o.empresa&&o.empresa!=='—'?`<div style="font-size:11px;color:var(--muted)">${o.empresa}</div>`:''}
+      </td>
+      <td>${tbBadge[o.tipo]||o.tipo}</td>
+      <td>${fsBadge[o.fase]||o.fase}</td>
+      <td style="font-size:12px">${o.cidade}, ${o.uf}</td>
+      <td>
+        <div style="font-size:12px;font-weight:500">${o.contato}</div>
+        <div style="font-size:11px;color:var(--muted)">${o.cargo}</div>
+        ${o.email&&o.email!=='—'?`<div style="font-size:10px;color:#1655A8;margin-top:1px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.email}</div>`:''}
+      </td>
+      <td style="font-size:12px">${o.m2?o.m2.toLocaleString('pt-BR')+' m²':'—'}</td>
+      <td>${stBadge[o.status]||o.status}</td>
+      <td style="font-size:12px">${o.vendedor||'—'}</td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-s btn-sm" onclick="event.stopPropagation();openObra(${o.id})" title="Ver ficha"><i class="ti ti-eye" aria-hidden="true"></i></button>
+        <button class="btn btn-s btn-sm" onclick="event.stopPropagation();window.open('https://wa.me/55${o.tel?o.tel.replace(/\D/g,'').slice(0,11):''}','_blank')" title="WhatsApp"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i></button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function filtObras(){
+  const q=(document.querySelector('#view-obras .sf')||{}).value||'';
+  const sels=document.querySelectorAll('#view-obras .fs');
+  const tp=sels[0]?.value||'',fs=sels[1]?.value||'',uf=sels[2]?.value||'',st=sels[3]?.value||'';
+  const base = obrasVisiveis();
+  rendObras(base.filter(o=>
+    (!q||(o.nome+o.cidade+o.contato).toLowerCase().includes(q.toLowerCase()))&&
+    (!tp||o.tipo===tp)&&(!fs||o.fase===fs)&&(!uf||o.uf===uf)&&(!st||o.status===st)
+  ));
+  const ps=document.querySelector('.ps');
+  if(ps) ps.textContent=`${base.length} obras disponíveis para ${CURRENT_USER?.nome||'você'}`;
+}
+
+function openObra(id){
+  const o=OBRAS.find(x=>x.id===id);if(!o)return;
+  document.getElementById('mObraT').textContent=o.nome;
+  const intecBadge=o.intec?`<span style="background:#E6F1FB;color:#1655A8;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:8px;border:1px solid #A8BFEE">✦ INTEC ${o.codigo||''}</span>`:'';
+  const contatosHtml=(o.contatos||[{nome:o.contato,cargo:o.cargo,tel:o.tel,email:o.email||'—'}]).map(c=>`
+    <div class="cpill" style="flex-wrap:wrap;gap:6px">
+      <i class="ti ti-user" aria-hidden="true"></i>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500">${c.nome}</div>
+        <div style="font-size:11px;color:var(--muted)">${c.cargo}</div>
+        ${c.tel&&c.tel!=='—'?`<div style="font-size:12px;color:var(--text);margin-top:3px"><i class="ti ti-phone" aria-hidden="true" style="font-size:11px;color:var(--orange)"></i> ${c.tel}</div>`:''}
+        ${c.email&&c.email!=='—'?`<div style="font-size:12px;color:#1655A8;margin-top:2px;word-break:break-all"><i class="ti ti-mail" aria-hidden="true" style="font-size:11px;color:var(--orange)"></i> ${c.email}</div>`:''}
+      </div>
+      ${c.tel&&c.tel!=='—'?`<button class="wbtn" onclick="window.open('https://wa.me/55${c.tel.replace(/\D/g,'').slice(0,11)}','_blank')">WhatsApp</button>`:''}
+    </div>`).join('');
+  document.getElementById('mObraT').innerHTML=o.nome+intecBadge;
+  document.getElementById('mObraB').innerHTML=`
+    <div class="frow">
+      <div class="fi"><label>Tipo</label><div class="fv">${o.tipo==='nova'?'Nova construção':o.tipo==='ampliacao'?'Ampliação':'Reforma'}</div></div>
+      <div class="fi"><label>Fase atual</label><div class="fv">${o.fase}</div></div>
+      <div class="fi"><label>Cidade / UF</label><div class="fv">${o.cidade}, ${o.uf}</div></div>
+      <div class="fi"><label>Área</label><div class="fv">${o.m2?o.m2.toLocaleString('pt-BR')+' m²':'A confirmar'}</div></div>
+    </div>
+    ${o.segmento?`<div class="frow">
+      <div class="fi"><label>Segmento</label><div class="fv">${o.segmento}</div></div>
+      <div class="fi"><label>Padrão</label><div class="fv">${o.padrao||'—'}</div></div>
+    </div>`:''}
+    ${o.endereco?`<div class="fi" style="margin-bottom:12px"><label>Endereço</label><div class="fv">${o.endereco} – CEP ${o.cep||'—'}</div></div>`:''}
+    ${o.empresa&&o.empresa!=='—'?`<div class="frow">
+      <div class="fi"><label>Empresa</label><div class="fv">${o.empresa}</div></div>
+      <div class="fi"><label>CNPJ</label><div class="fv">${o.cnpj||'—'}</div></div>
+    </div>`:''}
+    ${o.inicio?`<div class="frow">
+      <div class="fi"><label>Início da obra</label><div class="fv">${o.inicio}</div></div>
+      <div class="fi"><label>Término previsto</label><div class="fv">${o.termino||'—'}</div></div>
+    </div>`:''}
+    ${o.detalhes?`<div class="fi" style="margin-bottom:12px"><label>Detalhes</label><div class="fv" style="font-size:12px;line-height:1.6;white-space:normal">${o.detalhes}</div></div>`:''}
+    <div class="frow">
+      <div class="fi"><label>Status comercial</label><div class="fv">${o.status}</div></div>
+      <div class="fi"><label>Vendedor responsável</label><div class="fv">${o.vendedor||'Não atribuído'}</div></div>
+    </div>
+    <hr class="sdiv">
+    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">
+      Contatos da obra <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">(${(o.contatos||[]).length} contato${(o.contatos||[]).length!==1?'s':''})</span>
+    </div>
+    ${contatosHtml}
+    <hr class="sdiv">
+    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Registrar contato</div>
+    <div class="frow">
+      <div class="fi"><label>Tipo</label><select><option>Ligação</option><option>WhatsApp</option><option>E-mail</option><option>Visita</option></select></div>
+      <div class="fi"><label>Resultado</label><select><option>Não atendeu</option><option>Interessado</option><option>Proposta solicitada</option><option>Retornar depois</option></select></div>
+    </div>
+    <div class="fi" style="margin-bottom:14px"><label>Notas</label><textarea rows="2" placeholder="Anotações sobre o contato..."></textarea></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-p" style="background:linear-gradient(135deg,#D95F1A,#C0321A);gap:6px" onclick="(()=>{const oId=parseInt(document.querySelector('.mdl').dataset.obraId||'0');const o=OBRAS.find(x=>x.id===oId);if(o){closeM();analisarObraComIA(o);}})()">
+          <i class="ti ti-bolt" aria-hidden="true"></i>⚡ Analisar com IA
+        </button>
+        <button class="btn btn-p gestor-only" style="background:linear-gradient(135deg,#1C7A3F,#185FA5)" onclick="(()=>{const oId=parseInt(document.querySelector('.mdl').dataset.obraId||'0');atribuirObra(oId);})()">
+          <i class="ti ti-user-plus" aria-hidden="true"></i>Atribuir vendedor
+        </button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-s" onclick="closeM()">Fechar</button>
+        <button class="btn btn-p" id="btnSalvarContato" onclick="(async()=>{
+        const btn=document.getElementById('btnSalvarContato');btn.disabled=true;btn.textContent='Salvando...';
+        const sels=document.querySelectorAll('#mObraB select');
+        const tipo=sels[0]?.value||'Ligação';const resultado=sels[1]?.value||'—';
+        const notas=document.querySelector('#mObraB textarea')?.value||'';
+        const oId=parseInt(btn.closest('.mdl').dataset.obraId||'0');
+        await salvarRegistroContato(oId,tipo,resultado,notas,'Gestor');
+        const ns=resultado.includes('Proposta')?'Proposta':resultado.includes('Interessado')?'Em contato':'Em contato';
+        if(oId)await salvarStatusObra(oId,ns);
+        closeM();
+      })()"><i class="ti ti-check" aria-hidden="true"></i>Salvar contato</button>
+      </div>
+    </div>`;
+  document.getElementById('mObra').classList.add('open');
+}
+
+function openNovaObra(){
+  document.getElementById('mObraT').textContent='Cadastrar Nova Obra';
+  document.getElementById('mObraB').innerHTML=`
+    <div class="frow"><div class="fi"><label>Nome da obra</label><input placeholder="Ex: Shopping Bela Vista"></div><div class="fi"><label>Tipo</label><select><option>Nova construção</option><option>Ampliação</option><option>Reforma</option></select></div></div>
+    <div class="frow"><div class="fi"><label>Fase</label><select><option>Fundação</option><option>Estrutura</option><option>Acabamento</option></select></div><div class="fi"><label>Área (m²)</label><input type="number" placeholder="0"></div></div>
+    <div class="frow"><div class="fi"><label>Cidade</label><input placeholder="São Paulo"></div><div class="fi"><label>Estado</label><select><option>SP</option><option>RJ</option><option>MG</option><option>PR</option><option>RS</option><option>BA</option></select></div></div>
+    <hr class="sdiv">
+    <div class="frow"><div class="fi"><label>Nome do contato</label><input placeholder="Nome completo"></div><div class="fi"><label>Cargo</label><input placeholder="Ger. Compras"></div></div>
+    <div class="frow"><div class="fi"><label>Telefone / WhatsApp</label><input placeholder="(11) 99999-9999"></div><div class="fi"><label>E-mail</label><input placeholder="contato@empresa.com.br"></div></div>
+    <div class="frow"><div class="fi"><label>Vendedor</label><select>${TEAM.map(t=>`<option>${t.nome}</option>`).join('')}</select></div><div class="fi"><label>Status</label><select><option>Novo</option><option>Em contato</option></select></div></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+      <button class="btn btn-s" onclick="closeM()">Cancelar</button>
+      <button class="btn btn-p" id="btnCadastrar" onclick="(async()=>{
+        const inputs=document.querySelectorAll('#mObraB input');
+        const sels=document.querySelectorAll('#mObraB select');
+        const nome=inputs[0]?.value?.trim();
+        if(!nome){alert('Informe o nome da obra');return;}
+        const btn=document.getElementById('btnCadastrar');btn.disabled=true;btn.textContent='Salvando...';
+        const dados={
+          nome, tipo:sels[0]?.value==='Nova construção'?'nova':sels[0]?.value==='Ampliação'?'ampliacao':'reforma',
+          fase:sels[1]?.value||'Fundação', m2:parseInt(inputs[1]?.value)||0,
+          cidade:inputs[2]?.value||'', uf:sels[2]?.value||'SP',
+          contato:inputs[3]?.value||'', cargo:inputs[4]?.value||'',
+          tel:inputs[5]?.value||'', email:inputs[6]?.value||'',
+          vendedor:sels[3]?.value||'', status:sels[4]?.value||'Novo',
+          lat:0, lng:0, intec:false
+        };
+        await salvarNovaObra(dados);
+        closeM();
+      })()"><i class="ti ti-plus" aria-hidden="true"></i>Cadastrar</button>
+    </div>`;
+  document.getElementById('mObra').classList.add('open');
+}
+
+function closeM(){document.getElementById('mObra').classList.remove('open');}
+document.getElementById('mObra').addEventListener('click',function(e){if(e.target===this)closeM();});
+
+function rendKanban(){
+  const board=document.getElementById('kboard');board.innerHTML='';
+  KCOLS.forEach(col=>{
+    const cards=OBRAS.filter(o=>o.status===col.k);
+    const el=document.createElement('div');el.className='kcol';
+    el.innerHTML=`<div class="kch"><span class="kct" style="color:${col.c}">${col.l}</span><span class="kcc" style="color:${col.c}">${cards.length}</span></div>
+    <div class="kcards">${cards.map(o=>{
+      const t=TEAM.find(x=>x.nome===o.vendedor)||TEAM[0];
+      const tic={nova:'🔴',ampliacao:'🟡',reforma:'🔵'}[o.tipo]||'⚪';
+      return`<div class="kcard" onclick="openObra(${o.id})">
+        <div class="ktype">${tic} ${o.tipo==='nova'?'Nova':o.tipo==='ampliacao'?'Ampliação':'Reforma'}</div>
+        <div class="kname">${o.nome}</div>
+        <div class="kcity">${o.cidade}, ${o.uf} · ${o.m2.toLocaleString('pt-BR')} m²</div>
+        <div class="kbot"><span style="font-size:11px;color:var(--muted)">${o.fase}</span>
+        <div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--hint)">+${(o.id%7)+1}d</span>
+        <div class="kav" style="background:${t.cor}">${t.ini}</div></div></div>
+      </div>`;}).join('')}</div>`;
+    board.appendChild(el);
+  });
+}
+
+function rendAlertas(){
+  const ac={danger:'#C0321A',warn:'#966010',info:'#1655A8',success:'#1C7A3F'};
+  document.getElementById('aList').innerHTML=ALERTAS.map(a=>`
+    <div class="ali ${a.t}">
+      <i class="ti ${a.ic} aico" aria-hidden="true" style="color:${ac[a.t]}"></i>
+      <div class="alert-content" style="flex:1">
+        <div class="atitle">${a.tt}</div><div class="asub">${a.sb}</div>
+        <div class="aacc"><button class="abtn">Ver obra</button><button class="abtn">Atribuir</button><button class="abtn">Marcar lido</button></div>
+      </div>
+      <span class="atime">${a.tm}</span>
+    </div>`).join('');
+}
+
+let relDone=false;
+function initRel(){
+  if(relDone)return;relDone=true;
+  new Chart(document.getElementById('cTipo'),{type:'doughnut',data:{labels:['Nova construção','Ampliação','Reforma'],datasets:[{data:[52,26,22],backgroundColor:['#C0321A','#D95F1A','#1655A8'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:12}}}}});
+  new Chart(document.getElementById('cReceita'),{type:'line',data:{labels:['Jan','Fev','Mar','Abr','Mai','Jun'],datasets:[{label:'Receita',data:[1.2,1.5,1.8,2.0,2.3,2.6],borderColor:'#D95F1A',backgroundColor:'rgba(217,95,26,0.08)',tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#D95F1A'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11},callback:v=>'R$'+v+'M'}}}}});
+}
+
+document.querySelectorAll('.ct2').forEach(el=>el.addEventListener('click',()=>el.classList.toggle('on')));
+
+const avCs=['#C0321A','#1655A8','#1C7A3F','#5E2DBF','#D95F1A','#966010','#0a66c2'];
+function gI(n){return n.split(' ').slice(0,2).map(x=>x[0]).join('').toUpperCase();}
+function bC(t){const m={'Decisor':['#FFEAED','#B0202A'],'Influenciador':['#FFF4E0','#8A5700'],'Técnico':['#E3EEFF','#1145A0'],'Compras':['#EBF7EF','#1C7A3F']};return m[t]||m['Técnico'];}
+
+// ── APIs KEYS ─────────────────────────────────────────────────────
+const APOLLO_KEY  = 'V7klk7U1Kkw92MhtyIUeDw';
+const HUNTER_KEY  = '7b379fcaf9491ac50ddf42a323e3ebbe3fe368bf';
+
+// Mapeamento de cargos para as APIs
+const CARGO_MAP = {
+  'Compras':     ['gerente de compras','diretor de compras','procurement','purchasing manager','comprador'],
+  'Engenharia':  ['gerente de engenharia','diretor de engenharia','engenheiro','engineer'],
+  'Manutenção':  ['gerente de manutenção','maintenance manager','facilities manager'],
+  'Facilities':  ['facilities manager','gerente de facilities','infraestrutura'],
+  'Contratos':   ['gerente de contratos','contract manager','gestor de contratos'],
+  'Diretoria':   ['diretor','ceo','coo','diretor executivo','vice presidente'],
+};
+
+// ── HUNTER.IO — busca emails por domínio ─────────────────────────
+async function hunterDomainSearch(empresa) {
+  try {
+    const url = `https://api.hunter.io/v2/domain-search?company=${encodeURIComponent(empresa)}&api_key=${HUNTER_KEY}&limit=10&type=personal`;
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d?.data || null;
+  } catch(e) { return null; }
+}
+
+// ── APOLLO.IO — busca pessoas por empresa ────────────────────────
+async function apolloSearch(empresa, titulos) {
+  try {
+    const r = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+      body: JSON.stringify({
+        api_key: APOLLO_KEY,
+        q_organization_name: empresa,
+        person_titles: titulos,
+        per_page: 10,
+        page: 1
+      })
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d?.people || null;
+  } catch(e) { return null; }
+}
+
+// ── RENDERIZAR CARD DE CONTATO ────────────────────────────────────
+function renderContactCard(c, i, isReal) {
+  const [bg,fg] = bC(c.tipo||'Técnico');
+  const realBadge = isReal
+    ? `<span style="position:absolute;top:10px;left:10px;background:#EBF7EF;color:#1C7A3F;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;border:1px solid #9ADAB8">✓ DADO REAL</span>`
+    : `<span style="position:absolute;top:10px;left:10px;background:#F2EDFF;color:#5E2DBF;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;border:1px solid #C9B8F5">✦ IA</span>`;
+  return `<div class="cicard" style="padding-top:32px">
+    ${realBadge}
+    <span class="cibg" style="background:${bg};color:${fg}">${c.tipo||'Contato'}</span>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div class="ciav" style="background:${avCs[i%avCs.length]}">${gI(c.nome||'?')}</div>
+      <div><div class="cin">${c.nome||'—'}</div><div class="ciro">${c.cargo||'—'}</div></div>
+    </div>
+    ${c.email?`<div class="cirow"><i class="ti ti-mail" aria-hidden="true"></i><span style="color:#1655A8;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.email}</span></div>`:''}
+    ${c.telefone?`<div class="cirow"><i class="ti ti-phone" aria-hidden="true"></i><span>${c.telefone}</span></div>`:''}
+    ${c.linkedin?`<div class="cirow"><i class="ti ti-brand-linkedin" aria-hidden="true"></i><a href="${c.linkedin.startsWith('http')?c.linkedin:'https://'+c.linkedin}" target="_blank" style="color:#0a66c2;font-size:11px">Ver LinkedIn →</a></div>`:''}
+    <div class="cirow"><i class="ti ti-building" aria-hidden="true"></i><span>${c.departamento||c.cargo||'—'}</span></div>
+    ${c.relevancia?`<div class="cibw"><div class="cib" style="width:${c.relevancia}%;background:${c.relevancia>=80?'#1C7A3F':c.relevancia>=60?'#D95F1A':'#C0321A'}"></div></div><div style="font-size:10px;color:var(--hint);margin-top:3px">Relevância: ${c.relevancia}%</div>`:''}
+    <div class="ciac">
+      <button class="cibtn" onclick="navigator.clipboard&&navigator.clipboard.writeText('${(c.nome||'').replace(/'/g,"'")}\\n${(c.cargo||'').replace(/'/g,"'")}\\n${c.email||''}\\n${c.telefone||''}').then(()=>showToast('Copiado!','success'))">📋</button>
+      <button class="cibtn" onclick="window.open('https://wa.me/55${(c.telefone||'').replace(/\D/g,'').slice(0,11)}','_blank')">💬</button>
+      <button class="cibtn p" onclick="(async()=>{if(SB_READY&&sb){await sb.from('contatos_obra').insert({nome:'${(c.nome||'').replace(/'/g,"'")}',cargo:'${(c.cargo||'').replace(/'/g,"'")}',tel:'${c.telefone||''}',email:'${c.email||''}',tipo:'${c.tipo||'Contato'}'});showToast('✓ Salvo no CRM','success');}else showToast('Conecte o banco primeiro','error');})()">+ CRM</button>
+    </div>
+  </div>`;
+}
+
+async function buscarD(){
+  const emp = document.getElementById('ciInput').value.trim();
+  if(!emp){ document.getElementById('ciInput').focus(); return; }
+  const tags = [...document.querySelectorAll('.ct2.on')].map(e=>e.dataset.t);
+  const titulos = tags.flatMap(t => CARGO_MAP[t]||[]);
+  const btn = document.getElementById('ciBt');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader" aria-hidden="true" style="animation:spin .7s linear infinite"></i> Buscando...';
+
+  const steps = [
+    '🔍 Consultando Hunter.io para domínio e e-mails reais...',
+    '👤 Consultando Apollo.io para contatos reais...',
+    '🤖 Claude IA enriquecendo dados e mapeando cargos...',
+    '📊 Construindo análise de abordagem...',
+    '✅ Finalizando resultados...'
+  ];
+  let si = 0;
+  document.getElementById('ciResult').innerHTML = `<div style="text-align:center;padding:40px 20px">
+    <div class="lring"></div>
+    <div style="font-size:14px;font-weight:500" id="ciStTxt">${steps[0]}</div>
+    <div class="stps">${steps.map((s,i)=>`<div class="stp ${i===0?'on':''}" id="cs${i}"><span class="sdot"></span>${s}</div>`).join('')}</div>
+  </div>`;
+  const updateStep = (n) => {
+    si = n;
+    const el = document.getElementById('ciStTxt'); if(el) el.textContent = steps[n]||'';
+    steps.forEach((_,i)=>{ const e=document.getElementById('cs'+i); if(e) e.className='stp'+(i<n?' ok':i===n?' on':''); });
+  };
+
+  let contatosReais = [];
+  let hunterDomain = null;
+  let apolloOk = false;
+  let hunterOk = false;
+
+  try {
+    // ── PASSO 1: Hunter.io ─────────────────────────────────────
+    updateStep(0);
+    await new Promise(r=>setTimeout(r,600));
+    const hData = await hunterDomainSearch(emp);
+    if (hData && hData.emails && hData.emails.length > 0) {
+      hunterDomain = hData.domain;
+      hunterOk = true;
+      hData.emails.slice(0,5).forEach(e => {
+        const tipoStr = (e.position||'').toLowerCase();
+        let tipo = 'Contato';
+        if(/compra|purchas|procurement/.test(tipoStr)) tipo = 'Compras';
+        else if(/diretor|ceo|presidente|vp/.test(tipoStr)) tipo = 'Decisor';
+        else if(/engenhe|engineer/.test(tipoStr)) tipo = 'Técnico';
+        contatosReais.push({
+          nome: `${e.first_name||''} ${e.last_name||''}`.trim() || 'Contato Hunter',
+          cargo: e.position || 'Contato',
+          departamento: e.department || e.position || '—',
+          tipo,
+          email: e.value,
+          telefone: e.phone_number||'',
+          linkedin: e.linkedin||'',
+          cidade: hData.city||'',
+          relevancia: e.confidence || 80,
+          _real: true
+        });
+      });
+    }
+
+    // ── PASSO 2: Apollo.io ─────────────────────────────────────
+    updateStep(1);
+    await new Promise(r=>setTimeout(r,600));
+    const aData = await apolloSearch(emp, titulos.slice(0,6));
+    if (aData && aData.length > 0) {
+      apolloOk = true;
+      aData.slice(0,6).forEach(p => {
+        const jaExiste = contatosReais.some(c => c.email && c.email === (p.email||''));
+        if (!jaExiste) {
+          const tipoStr = (p.title||'').toLowerCase();
+          let tipo = 'Contato';
+          if(/compra|purchas|procurement/.test(tipoStr)) tipo = 'Compras';
+          else if(/diretor|ceo|presidente|vp/.test(tipoStr)) tipo = 'Decisor';
+          else if(/engenhe|engineer/.test(tipoStr)) tipo = 'Técnico';
+          else if(/facilit|manuten/.test(tipoStr)) tipo = 'Influenciador';
+          contatosReais.push({
+            nome: `${p.first_name||''} ${p.last_name||''}`.trim() || 'Contato Apollo',
+            cargo: p.title || '—',
+            departamento: p.department || p.title || '—',
+            tipo,
+            email: p.email || '',
+            telefone: p.phone_numbers?.[0]?.raw_number || '',
+            linkedin: p.linkedin_url || '',
+            cidade: p.city ? `${p.city}, ${p.state||''}` : '',
+            relevancia: 85,
+            _real: true
+          });
+        }
+      });
+    }
+
+    // ── PASSO 3: Groq AI — enriquece e preenche ──────────────
+    updateStep(2);
+    await new Promise(r=>setTimeout(r,500));
+    const promptAI = `Você é especialista B2B construção civil Brasil. Empresa: "${emp}". Vendo PORTAS AUTOMÁTICAS. Cargos: ${tags.join(', ')}.
+${contatosReais.length>0?`Já encontrei ${contatosReais.length} contatos reais. Complete com mais se necessário.`:'Gere 6 contatos plausíveis.'}
+Retorne SOMENTE JSON válido sem texto fora dele:
+{"empresa":"nome","setor":"setor","porte":"grande","cidade_sede":"cidade, UF","abordagem":"estratégia de venda de portas automáticas para essa empresa em 2 parágrafos","contatos":[{"nome":"Nome","cargo":"Cargo","departamento":"Depto","tipo":"Decisor","email":"email@empresa.com.br","telefone":"(11) 9XXXX-XXXX","linkedin":"linkedin.com/in/nome","cidade":"Cidade, UF","relevancia":85}]}`;
+
+    updateStep(3);
+    const rawAI = await callAI('Você é especialista B2B em vendas de portas automáticas para construção civil brasileira. Retorne APENAS JSON válido, sem texto adicional.', promptAI, 2000);
+    updateStep(4);
+    const p = parseAIJson(rawAI);
+    const csAI = (p.contatos||[]).map(c=>({...c,_real:false}));
+
+    // Combina: reais primeiro, depois IA
+    const todosCt = [...contatosReais, ...csAI].slice(0,8);
+    window._ciC = todosCt;
+
+    // Badge de fonte
+    const fontesBadge = [
+      hunterOk ? `<span style="background:#EBF7EF;color:#1C7A3F;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid #9ADAB8">✓ Hunter.io</span>` : '',
+      apolloOk ? `<span style="background:#EAF0FB;color:#1655A8;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid #A8BFEE">✓ Apollo.io</span>` : '',
+      `<span style="background:#F2EDFF;color:#5E2DBF;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid #C9B8F5">✦ Claude IA</span>`
+    ].filter(Boolean).join('');
+
+    const reaisCount = todosCt.filter(c=>c._real).length;
+    const aiCount = todosCt.filter(c=>!c._real).length;
+
+    document.getElementById('ciResult').innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:18px;font-weight:600">${todosCt.length} decisores encontrados</div>
+          <div style="font-size:12px;color:var(--orange);margin-top:2px">${p.empresa||emp} · ${p.setor||''} · ${p.porte||''} · ${p.cidade_sede||''}</div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            ${fontesBadge}
+            ${reaisCount>0?`<span style="background:#FAEEDA;color:#854F0B;font-size:11px;padding:3px 10px;border-radius:20px">${reaisCount} dados reais · ${aiCount} completados por IA</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-s btn-sm" onclick="expCi()"><i class="ti ti-download" aria-hidden="true"></i>CSV</button>
+          <button class="btn btn-p btn-sm" onclick="salvarTodosContatos()"><i class="ti ti-plus" aria-hidden="true"></i>Todos ao CRM</button>
+        </div>
+      </div>
+      ${p.abordagem?`<div style="background:var(--orange-l);border:1px solid var(--orange-b);border-radius:var(--rs);padding:14px 16px;margin-bottom:16px;font-size:13px;color:#7a3010;line-height:1.7"><strong style="color:var(--orange)">💡 Estratégia de abordagem:</strong> ${p.abordagem}</div>`:''}
+      <div class="cigrid">${todosCt.map((c,i)=>renderContactCard(c,i,!!c._real)).join('')}</div>`;
+
+  } catch(e) {
+    clearInterval(0);
+    document.getElementById('ciResult').innerHTML = `<div style="background:var(--red-bg);border:1px solid #F5C4BE;border-radius:var(--rs);padding:14px 16px;color:var(--red);font-size:13px">⚠ Erro: ${e.message}</div>`;
+  }
+  btn.disabled=false;
+  btn.innerHTML='<i class="ti ti-brain" aria-hidden="true"></i> Buscar decisores';
+}
+
+async function salvarTodosContatos() {
+  if(!window._ciC||!SB_READY) { showToast('Conecte o banco primeiro','error'); return; }
+  for(const c of window._ciC) {
+    await sb.from('contatos_obra').insert({nome:c.nome,cargo:c.cargo,tel:c.telefone||'',email:c.email||'',tipo:c.tipo||'Contato'});
+  }
+  showToast(`✓ ${window._ciC.length} contatos salvos no CRM!`,'success');
+}
+
+function expCi(){
+  if(!window._ciC||!window._ciC.length)return;
+  const h='Nome,Cargo,Depto,Tipo,Email,Telefone,LinkedIn,Relevância\n';
+  const r=window._ciC.map(c=>`"${c.nome}","${c.cargo}","${c.departamento}","${c.tipo}","${c.email||''}","${c.telefone||''}","${c.linkedin||''}","${c.relevancia}"`).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([h+r],{type:'text/csv'}));a.download='decisores.csv';a.click();
+}
+
+document.getElementById('dataBadge').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
+
+// ── SUPABASE INTEGRATION ─────────────────────────────────────────
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJocmZ5c3Fxb3N2amNzZ2x3ZHZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NzMzMTEsImV4cCI6MjA5NTI0OTMxMX0.weclo-ogn_qUuBqwuMcWGbmBN0aMIlH27nZlR_rijc8';
+let SB_URL = 'https://bhrfysqqosvjcsglwdvr.supabase.co';
+let sb = null;
+let SB_READY = false;
+
+// ── GROQ AI — grátis, sem cartão, funciona direto no browser ─────
+// Obter chave gratuita: console.groq.com → API Keys → Create (sem cartão)
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL    = 'llama-3.3-70b-versatile';
+
+function getGroqKey(){ return localStorage.getItem('obraradar_groq_key')||''; }
+
+async function callAI(systemPrompt, userMsg, maxTokens=2000){
+  const key = getGroqKey();
+  if(!key){
+    showToast('⚙️ Configure sua chave Groq grátis em Configurações','warn');
+    return getDemoRaioX(userMsg);
+  }
+  try {
+    const r = await fetch(GROQ_ENDPOINT,{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model: GROQ_MODEL,
+        messages:[{role:'system',content:systemPrompt},{role:'user',content:userMsg}],
+        max_tokens: maxTokens,
+        temperature: 0.7
+      })
+    });
+    if(!r.ok){ const e=await r.json(); throw new Error(e.error?.message||'Erro Groq'); }
+    const d = await r.json();
+    return d.choices?.[0]?.message?.content || '';
+  } catch(e){
+    showToast('Erro IA: '+e.message,'error');
+    return getDemoRaioX(userMsg);
+  }
+}
+
+// Mantém retrocompatibilidade
+async function callClaude(sys,msg,tk=2000){ return callAI(sys,msg,tk); }
+
+// ── PARSER JSON ROBUSTO — corrige respostas quebradas do LLM ─────
+function parseAIJson(raw) {
+  if(!raw) throw new Error('Resposta vazia da IA');
+
+  // 1. Tenta extrair o JSON do texto
+  let txt = raw.trim();
+
+  // Remove markdown code blocks se existir
+  txt = txt.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+
+  // Tenta encontrar o objeto JSON principal
+  const start = txt.indexOf('{');
+  const end   = txt.lastIndexOf('}');
+  if(start === -1 || end === -1) throw new Error('JSON não encontrado na resposta');
+  txt = txt.slice(start, end+1);
+
+  // 2. Tenta parse direto
+  try { return JSON.parse(txt); } catch(e1) {}
+
+  // 3. Tenta reparar problemas comuns
+  try {
+    let fixed = txt
+      // Remove trailing commas antes de } ou ]
+      .replace(/,\s*([}\]])/g, '$1')
+      // Corrige aspas simples para duplas
+      .replace(/:\s*'([^']*)'/g, ': "$1"')
+      // Remove caracteres de controle
+      .replace(/[\x00-\x1F\x7F]/g, ' ')
+      // Fecha JSON truncado
+      ;
+
+    // Se o JSON está truncado, tenta fechar
+    const opens = (fixed.match(/\{/g)||[]).length;
+    const closes = (fixed.match(/\}/g)||[]).length;
+    if(opens > closes) fixed += '}'.repeat(opens - closes);
+
+    return JSON.parse(fixed);
+  } catch(e2) {}
+
+  // 4. Extrai campos essenciais manualmente
+  const get = (k) => {
+    const m = raw.match(new RegExp(`"${k}"\\s*:\\s*"([^"]*)"`,));
+    return m?m[1]:'';
+  };
+  const getNum = (k) => {
+    const m = raw.match(new RegExp(`"${k}"\\s*:\\s*(\\d+)`));
+    return m?parseInt(m[1]):50;
+  };
+  return {
+    classificacao: get('classificacao')||'B',
+    classe_label: get('classe_label')||'ALTO POTENCIAL',
+    score: getNum('score')||72,
+    resumo: get('resumo')||'Oportunidade identificada. Análise completa disponível após revisão da IA.',
+    tecnoportas:{portas_rapidas:{qtd:'4-6',aplicacao:'Principal'},portas_seccionadas:{qtd:'2-3',aplicacao:'Veículos'},portas_enrolar:{qtd:'4-6',aplicacao:'Emergência'},portas_corta_fogo:{qtd:'2',aplicacao:'Risco'},automacao:{qtd:'1 sistema',aplicacao:'Central'}},
+    tecnodock:{niveladoras:{qtd:'4-6',aplicacao:'Docas'},abrigos:{qtd:'4-6',aplicacao:'Proteção'},selos:{qtd:'4-6',aplicacao:'Vedação'},plataformas:{qtd:'2',aplicacao:'Nivelamento'}},
+    ticket:{categoria:'Médio',faixa:'R$ 100k – R$ 500k',tecnoportas_estimado:'R$ 180.000',tecnodock_estimado:'R$ 220.000',total_estimado:'R$ 400.000'},
+    decisores:[{cargo:'Comprador / Suprimentos',prioridade:'Alta',abordagem:'Telefone + visita'},{cargo:'Gerente de Engenharia',prioridade:'Alta',abordagem:'LinkedIn'}],
+    spin:{situacao:'Qual o volume de operações previsto?',problema:'Quais desafios de acesso e temperatura existem?',implicacao:'Como atrasos na expedição afetam os custos?',necessidade:'Uma solução integrada resolveria esses problemas?'},
+    estrategia:{canal_principal:'Visita ao canteiro',linkedin:'Buscar Diretor de Engenharia',parceiros:'Construtora responsável',timing:'Fase de acabamento — contato imediato',argumento_principal:'ROI em 18 meses com automação completa'},
+    ocultas:['Proposta conjunta Tecnoportas + Tecnodock'],
+    plano_acao:['Hoje: contato com comprador','Amanhã: enviar catálogo técnico','Esta semana: visita técnica'],
+    proximo_passo:'Ligar hoje para o comprador e agendar visita'
+  };
+}
+function getDemoRaioX(desc){
+  const isCD = /cd|centro de distribui|logístico|galpão|logistic/i.test(desc);
+  const isHosp = /hospital|clínica|saúde/i.test(desc);
+  const isShopping = /shopping|mall|outlet|comercial/i.test(desc);
+  const cls = isCD?'A':isShopping?'B':'B';
+  return JSON.stringify({
+    classificacao:cls, classe_label:cls==='A'?'PRIORIDADE MÁXIMA':'ALTO POTENCIAL',
+    score:cls==='A'?92:74,
+    resumo:`Oportunidade de ${cls==='A'?'alta':'média-alta'} prioridade identificada. ${isCD?'Centro logístico com alto potencial para niveladoras e portas rápidas.':isShopping?'Shopping com necessidade de portões automáticos e controle de acesso.':'Empreendimento comercial com demanda por portas automáticas e seccionadas.'}`,
+    tecnoportas:{
+      portas_rapidas:{qtd:isCD?'6-10 unidades':'2-4 unidades',aplicacao:'Expedição e entrada principal'},
+      portas_seccionadas:{qtd:'2-4 unidades',aplicacao:'Acesso de veículos'},
+      portas_enrolar:{qtd:'4-6 unidades',aplicacao:'Saídas de emergência e setorização'},
+      portas_corta_fogo:{qtd:'2-3 unidades',aplicacao:'Áreas de risco e almoxarifado'},
+      automacao:{qtd:'1 sistema',aplicacao:'Controle central integrado'}
+    },
+    tecnodock:{
+      niveladoras:{qtd:isCD?'6-12 unidades':'2-4 unidades',aplicacao:'Docas de carga e descarga'},
+      abrigos:{qtd:isCD?'6-12 unidades':'2-4 unidades',aplicacao:'Proteção das docas'},
+      selos:{qtd:isCD?'6-12 unidades':'2-4 unidades',aplicacao:'Vedação térmica e acústica'},
+      plataformas:{qtd:'2-4 unidades',aplicacao:'Plataforma de nivelamento'}
+    },
+    ticket:{
+      categoria:cls==='A'?'Alto':'Médio',
+      faixa:cls==='A'?'R$ 500 mil a R$ 2 milhões':'R$ 100 mil a R$ 500 mil',
+      tecnoportas_estimado:cls==='A'?'R$ 420.000':'R$ 180.000',
+      tecnodock_estimado:cls==='A'?'R$ 580.000':'R$ 220.000',
+      total_estimado:cls==='A'?'R$ 1.000.000':'R$ 400.000'
+    },
+    decisores:[
+      {cargo:'Diretor Industrial / Operações',prioridade:'Alta',abordagem:'LinkedIn + visita presencial'},
+      {cargo:'Gerente de Logística',prioridade:'Alta',abordagem:'Telefone + e-mail técnico'},
+      {cargo:'Comprador / Suprimentos',prioridade:'Alta',abordagem:'Indicação da construtora'},
+      {cargo:'Coordenador de Obras',prioridade:'Média',abordagem:'Visita ao canteiro'}
+    ],
+    spin:{
+      situacao:'Qual será o volume diário de movimentações nas docas após a operação iniciar?',
+      problema:'Como a equipe está planejando controlar temperatura e segurança nas entradas do galpão?',
+      implicacao:'Qual seria o impacto financeiro de atrasos na expedição causados por portões manuais lentos?',
+      necessidade:'Se eu mostrasse como reduzir o tempo de carga em 40% com niveladoras automáticas, faria sentido avaliar?'
+    },
+    estrategia:{
+      canal_principal:'Visita presencial ao canteiro na fase de acabamento',
+      linkedin:'Buscar Diretor de Engenharia e Gerente de Logística no LinkedIn',
+      parceiros:'Abordar construtora responsável para indicação ao cliente',
+      timing:'AGORA — fase de acabamento é o momento ideal para especificar',
+      argumento_principal:'Redução de 40% no tempo de carga/descarga, ROI em 18 meses'
+    },
+    ocultas:[
+      'Proposta conjunta Tecnoportas + Tecnodock aumenta ticket e facilita negociação',
+      'Verificar se há necessidade de controle de acesso integrado às portas',
+      'Perguntar sobre expansões futuras para garantir especificação preventiva'
+    ],
+    plano_acao:[
+      'Hoje: Ligar para o comprador e apresentar cases de sucesso similares',
+      'Amanhã: Enviar catálogo técnico e proposta preliminar por e-mail',
+      'Esta semana: Agendar visita técnica ao canteiro com engenheiro de vendas',
+      'Próxima semana: Apresentar proposta formal com payback calculado'
+    ],
+    proximo_passo:'Ligar hoje para o comprador — use a pergunta SPIN de Necessidade para abrir a porta'
+  });
+}
+
+// ── PROMPT MASTER — TECNOPORTAS & TECNODOCK ──────────────────────
+const SYSTEM_PROMPT_MASTER=`Você é o maior especialista do Brasil em prospecção de obras, engenharia comercial e vendas consultivas para Tecnoportas e Tecnodock.
+
+TECNOPORTAS: Portas de enrolar automáticas, portas rápidas industriais, portas seccionadas, portas corta-fogo, portões industriais, automação.
+TECNODOCK: Niveladoras de doca, abrigos de doca, selos de doca, plataformas de carga, equipamentos logísticos.
+
+CLASSIFICAÇÃO:
+A – PRIORIDADE MÁXIMA: CD logístico, transportadora, e-commerce, frigorífico, indústria alimentícia/farmacêutica/automotiva, >5.000m²
+B – ALTO POTENCIAL: Atacadistas, supermercados, shoppings, indústrias médias, distribuidoras
+C – POTENCIAL MODERADO: Comércio geral, galpões pequenos, reformas, empreendimentos mistos
+
+Retorne EXATAMENTE este JSON sem texto fora dele:
+{"classificacao":"A","classe_label":"PRIORIDADE MÁXIMA","score":87,"resumo":"Resumo executivo da oportunidade em 2-3 frases.","tecnoportas":{"portas_rapidas":{"qtd":"4-6 unidades","aplicacao":"Portaria e expedição"},"portas_seccionadas":{"qtd":"2-3 unidades","aplicacao":"Acesso veículos"},"portas_enrolar":{"qtd":"6-8 unidades","aplicacao":"Emergência e setores"},"portas_corta_fogo":{"qtd":"2-4 unidades","aplicacao":"Áreas de risco"},"automacao":{"qtd":"1 sistema","aplicacao":"Controle central"}},"tecnodock":{"niveladoras":{"qtd":"4-8 unidades","aplicacao":"Docas de carga e descarga"},"abrigos":{"qtd":"4-8 unidades","aplicacao":"Proteção das docas"},"selos":{"qtd":"4-8 unidades","aplicacao":"Vedação térmica"},"plataformas":{"qtd":"2-4 unidades","aplicacao":"Carga e descarga"}},"ticket":{"categoria":"Alto","faixa":"R$ 500 mil a R$ 2 milhões","tecnoportas_estimado":"R$ 280.000","tecnodock_estimado":"R$ 420.000","total_estimado":"R$ 700.000"},"decisores":[{"cargo":"Diretor Industrial","prioridade":"Alta","abordagem":"LinkedIn + visita presencial"},{"cargo":"Gerente de Logística","prioridade":"Alta","abordagem":"Telefone + visita"},{"cargo":"Comprador","prioridade":"Média","abordagem":"E-mail + telefone"}],"spin":{"situacao":"Qual é o volume de operações de carga e descarga diárias previstas?","problema":"Quais são os maiores desafios de controle de temperatura e segurança nas docas?","implicacao":"Como as perdas por temperatura inadequada afetam os custos operacionais mensais?","necessidade":"Se tivéssemos solução que garantisse vedação perfeita e agilidade nas docas, resolveria?"},"estrategia":{"canal_principal":"Visita presencial ao canteiro + reunião com engenharia","linkedin":"Buscar Diretor de Engenharia e Gerente de Logística","parceiros":"Construtora responsável pelo projeto","timing":"Contato imediato — fase de acabamento é o momento ideal","argumento_principal":"Redução de 30% no tempo de carga/descarga com niveladoras automáticas"},"ocultas":["Considerar controle de acesso integrado às portas automáticas","Proposta conjunta Tecnoportas + Tecnodock aumenta ticket médio"],"plano_acao":["Hoje: Contato com comprador via telefone/WhatsApp","Amanhã: Envio de catálogo técnico por e-mail","Semana: Visita presencial com engenheiro de vendas"],"proximo_passo":"Ligar hoje para o comprador e agendar visita técnica ao canteiro"}`;
+
+async function gerarRaioX(descricaoExterna){
+  const descricao=descricaoExterna||document.getElementById('rxInput')?.value?.trim();
+  if(!descricao){showToast('Cole a descrição da obra antes de gerar','error');return;}
+  const modo=document.getElementById('rxModo')?.value||'padrao';
+  const btn=document.getElementById('rxBtn');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader" aria-hidden="true" style="animation:spin .7s linear infinite"></i> Analisando...';}
+  const rxDiv=document.getElementById('rxResult');
+  if(rxDiv)rxDiv.innerHTML=`<div style="text-align:center;padding:50px 20px"><div class="lring"></div><div style="font-size:15px;font-weight:500;margin-bottom:8px">Gerando Raio-X Comercial...</div><div style="font-size:12px;color:var(--muted)">Analisando oportunidade para Tecnoportas & Tecnodock</div></div>`;
+  let modoExtra='';
+  if(modo==='fechar')modoExtra='\n\nMODO DIRETOR COMERCIAL: Foque em estratégia de fechamento, objeções e como quebrá-las.';
+  if(modo==='priorizar')modoExtra='\n\nMODO GERENTE DE EXPANSÃO: Foque em prioridades e facilidade de acesso ao decisor.';
+  try{
+    const raw=await callAI(SYSTEM_PROMPT_MASTER,descricao+modoExtra,4000);
+    const r=parseAIJson(raw);
+    const clsC={'A':'#C0321A','B':'#D95F1A','C':'#966010'}[r.classificacao]||'#666';
+    const clsBg={'A':'#FFEAED','B':'#FFF0E6','C':'#FFF8E6'}[r.classificacao]||'#f5f5f5';
+    const scC=r.score>=80?'#1C7A3F':r.score>=60?'#D95F1A':'#C0321A';
+    if(rxDiv)rxDiv.innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="background:${clsBg};border:2px solid ${clsC};border-radius:10px;padding:10px 18px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:${clsC};font-family:'Sora',sans-serif">${r.classificacao}</div>
+        <div style="font-size:10px;font-weight:600;color:${clsC}">${r.classe_label||''}</div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px">Raio-X Comercial — Tecnoportas & Tecnodock</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">${r.resumo||''}</div>
+      </div>
+      <div style="text-align:center;background:var(--bg);border-radius:10px;padding:10px 16px;border:1px solid var(--border-md)">
+        <div style="font-size:28px;font-weight:700;color:${scC};font-family:'Sora',sans-serif">${r.score}</div>
+        <div style="font-size:10px;color:var(--muted)">Score/100</div>
+      </div>
+      <button class="btn btn-s btn-sm" onclick="imprimirRaioX()"><i class="ti ti-printer" aria-hidden="true"></i>Imprimir</button>
+    </div>
+    <div class="g2" style="margin-bottom:12px">
+      <div class="card" style="border-top:3px solid #C0321A">
+        <div class="ct" style="color:#C0321A"><span>🚪 Potencial Tecnoportas</span></div>
+        ${Object.entries(r.tecnoportas||{}).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px"><div><div style="font-weight:500">${k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div><div style="color:var(--muted);font-size:11px">${v.aplicacao||''}</div></div><span style="background:#FFEAED;color:#C0321A;padding:2px 8px;border-radius:20px;font-size:11px;white-space:nowrap;align-self:center">${v.qtd||''}</span></div>`).join('')}
+      </div>
+      <div class="card" style="border-top:3px solid #1655A8">
+        <div class="ct" style="color:#1655A8"><span>🏭 Potencial Tecnodock</span></div>
+        ${Object.entries(r.tecnodock||{}).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px"><div><div style="font-weight:500">${k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div><div style="color:var(--muted);font-size:11px">${v.aplicacao||''}</div></div><span style="background:#E6F1FB;color:#1655A8;padding:2px 8px;border-radius:20px;font-size:11px;white-space:nowrap;align-self:center">${v.qtd||''}</span></div>`).join('')}
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:12px;border-top:3px solid #1C7A3F">
+      <div class="ct"><span>💰 Estimativa de Ticket</span><span style="background:#EBF7EF;color:#1C7A3F;font-size:12px;font-weight:600;padding:3px 12px;border-radius:20px">${r.ticket?.categoria||''}</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:8px">
+        <div style="text-align:center;padding:12px;background:var(--bg);border-radius:var(--rs)"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Tecnoportas</div><div style="font-size:16px;font-weight:700;color:#C0321A">${r.ticket?.tecnoportas_estimado||'—'}</div></div>
+        <div style="text-align:center;padding:12px;background:var(--bg);border-radius:var(--rs)"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Tecnodock</div><div style="font-size:16px;font-weight:700;color:#1655A8">${r.ticket?.tecnodock_estimado||'—'}</div></div>
+        <div style="text-align:center;padding:12px;background:#EBF7EF;border-radius:var(--rs);border:1px solid #9ADAB8"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Total Estimado</div><div style="font-size:18px;font-weight:700;color:#1C7A3F">${r.ticket?.total_estimado||'—'}</div></div>
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--muted)">${r.ticket?.faixa||''}</div>
+    </div>
+    <div class="g2" style="margin-bottom:12px">
+      <div class="card">
+        <div class="ct"><span>👤 Decisores</span></div>
+        ${(r.decisores||[]).map(d=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><div><div style="font-weight:500">${d.cargo||''}</div><div style="font-size:11px;color:var(--muted)">${d.abordagem||''}</div></div><span style="background:${d.prioridade==='Alta'?'#FFEAED':d.prioridade==='Média'?'#FFF8E6':'#EAF0FB'};color:${d.prioridade==='Alta'?'#C0321A':d.prioridade==='Média'?'#966010':'#1655A8'};padding:2px 8px;border-radius:20px;font-size:10px">${d.prioridade||''}</span></div>`).join('')}
+        <button class="btn btn-p btn-sm" style="width:100%;justify-content:center;margin-top:10px" onclick="navTo('contatos')"><i class="ti ti-brain" aria-hidden="true"></i>Buscar Contatos Reais</button>
+      </div>
+      <div class="card">
+        <div class="ct"><span>🎯 Perguntas SPIN Selling</span></div>
+        ${[{l:'Situação',k:'situacao',bg:'#EAF0FB',c:'#1655A8'},{l:'Problema',k:'problema',bg:'#FFF0E6',c:'#D95F1A'},{l:'Implicação',k:'implicacao',bg:'#FFF8E6',c:'#966010'},{l:'Necessidade',k:'necessidade',bg:'#EBF7EF',c:'#1C7A3F'}].map(s=>`<div style="margin-bottom:8px;padding:8px 10px;background:${s.bg};border-radius:var(--rs)"><div style="font-size:10px;font-weight:700;color:${s.c};margin-bottom:3px">${s.l.toUpperCase()}</div><div style="font-size:12px;line-height:1.4">${r.spin?.[s.k]||'—'}</div></div>`).join('')}
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="ct"><span>🗺️ Estratégia de Abordagem</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+        ${Object.entries(r.estrategia||{}).map(([k,v])=>`<div style="padding:8px 10px;background:var(--bg);border-radius:var(--rs)"><div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:3px">${k.replace(/_/g,' ')}</div><div style="line-height:1.4">${v}</div></div>`).join('')}
+      </div>
+    </div>
+    ${r.ocultas?.length?`<div class="card" style="margin-bottom:12px;border-left:4px solid #D95F1A"><div class="ct"><span>🔍 Oportunidades Ocultas</span></div>${r.ocultas.map(o=>`<div style="padding:6px 0;font-size:12px;border-bottom:1px solid var(--border);display:flex;gap:8px"><span style="color:#D95F1A;flex-shrink:0">→</span>${o}</div>`).join('')}</div>`:''}
+    <div class="card" style="background:linear-gradient(135deg,#EBF7EF,#fff);border:1px solid #9ADAB8">
+      <div class="ct"><span>✅ Plano de Ação</span></div>
+      ${(r.plano_acao||[]).map((p,i)=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><div style="background:#1C7A3F;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i+1}</div>${p}</div>`).join('')}
+      <div style="margin-top:12px;padding:12px;background:#1C7A3F;border-radius:var(--rs);color:#fff;font-size:13px;font-weight:600">🎯 Próximo passo: ${r.proximo_passo||''}</div>
+    </div>`;
+    showToast('✓ Raio-X gerado com sucesso!','success');
+  }catch(e){
+    if(rxDiv)rxDiv.innerHTML=`<div style="background:var(--red-bg);border:1px solid #F5C4BE;border-radius:var(--rs);padding:16px;color:var(--red)">⚠ Erro: ${e.message}<br><br><small>Configure a Edge Function no Supabase para uso em produção.</small></div>`;
+  }
+  if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-bolt" aria-hidden="true"></i>Gerar Raio-X Comercial';}
+}
+
+function imprimirRaioX(){ window.print(); }
+
+// Botão Analisar na ficha da obra
+function analisarObraComIA(o){
+  navTo('raio-x');
+  const desc=`${o.nome} — ${o.segmento||o.tipo} em ${o.cidade}, ${o.uf}. ${o.m2?o.m2.toLocaleString('pt-BR')+'m². ':''}Fase: ${o.fase}. Empresa: ${o.empresa||'—'}. ${o.detalhes||''}`;
+  document.getElementById('rxInput').value=desc;
+  setTimeout(()=>gerarRaioX(desc),300);
+}
+
+async function initSupabase() {
+  if (!SB_URL) { showSetupModal(); return false; }
+  try {
+    sb = window.supabase.createClient(SB_URL, SB_KEY);
+    const { error } = await sb.from('obras').select('id').limit(1);
+    if (error) throw error;
+    SB_READY = true;
+    showToast('✓ Conectado ao banco de dados!','success');
+    return true;
+  } catch(e) {
+    showToast('⚠ Erro de conexão: ' + e.message,'error');
+    return false;
+  }
+}
+
+function showSetupModal() {
+  const m = document.getElementById('mSetup');
+  if (m) { m.classList.add('open'); return; }
+  const el = document.createElement('div');
+  el.id = 'mSetup';
+  el.className = 'mo open';
+  el.innerHTML = `<div class="mdl" style="max-width:480px">
+    <div class="mtitle">⚡ Conectar ao banco de dados</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">Cole a <strong>URL do projeto</strong> Supabase para ativar persistência de dados.<br>Acesse: <strong>Supabase → Settings → API → Project URL</strong></p>
+    <div class="fi" style="margin-bottom:16px">
+      <label>URL do projeto Supabase</label>
+      <input id="sbUrlInput" placeholder="https://xxxxxxxxxxx.supabase.co" style="font-size:14px">
+    </div>
+    <div style="background:var(--blue-bg);border:1px solid #A8BFEE;border-radius:var(--rs);padding:10px 12px;font-size:12px;color:#0C447C;margin-bottom:16px">
+      🔑 Chave já configurada: <code style="background:#fff;padding:1px 6px;border-radius:4px;font-size:11px">sb_publishable_TO45pq…</code>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-s" onclick="document.getElementById('mSetup').classList.remove('open');initDash()">Usar dados locais</button>
+      <button class="btn btn-p" onclick="saveSupabaseUrl()"><i class="ti ti-database" aria-hidden="true"></i>Conectar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click', function(e){if(e.target===this)this.classList.remove('open');});
+  setTimeout(()=>{const i=document.getElementById('sbUrlInput');if(i&&SB_URL)i.value=SB_URL;},100);
+}
+
+async function saveSupabaseUrl() {
+  const v = (document.getElementById('sbUrlInput')||{}).value?.trim();
+  if (!v || !v.includes('supabase.co')) { showToast('URL inválida — deve conter supabase.co','error'); return; }
+  SB_URL = v;
+  localStorage.setItem('obraradar_sb_url', v);
+  document.getElementById('mSetup')?.classList.remove('open');
+  const ok = await initSupabase();
+  if (ok) { await loadObrasFromDB(); navTo('dashboard'); }
+}
+
+// ── TOAST NOTIFICATIONS ───────────────────────────────────────────
+function showToast(msg, type='info') {
+  const colors = {success:'#1C7A3F',error:'#C0321A',info:'#1655A8',warn:'#966010'};
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--border-md);border-left:4px solid ${colors[type]||colors.info};border-radius:var(--r);padding:12px 16px;font-size:13px;color:var(--text);z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.12);max-width:320px;animation:slideIn .3s ease`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 3500);
+}
+const toastStyle = document.createElement('style');
+toastStyle.textContent = '@keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}';
+document.head.appendChild(toastStyle);
+
+// ── LOAD OBRAS FROM SUPABASE ──────────────────────────────────────
+async function loadObrasFromDB() {
+  if (!SB_READY || !sb) return;
+  try {
+    showToast('Carregando obras do banco…','info');
+    const { data: obras, error } = await sb.from('obras').select(`*, contatos_obra(*)`).order('id');
+    if (error) throw error;
+    if (obras && obras.length > 0) {
+      OBRAS.length = 0;
+      obras.forEach(o => {
+        OBRAS.push({
+          id: o.id, intec: o.intec, codigo: o.codigo,
+          nome: o.nome, tipo: o.tipo || 'nova', fase: o.fase || 'Estrutura',
+          segmento: o.segmento, cidade: o.cidade, uf: o.uf,
+          cep: o.cep, endereco: o.endereco, empresa: o.empresa || '—',
+          cnpj: o.cnpj, inicio: o.inicio, termino: o.termino,
+          padrao: o.padrao, detalhes: o.detalhes,
+          contato: o.contato, cargo: o.cargo, tel: o.tel, email: o.email,
+          contatos: (o.contatos_obra||[]).map(c=>({nome:c.nome,cargo:c.cargo,tel:c.tel,email:c.email})),
+          m2: o.m2 || 0, status: o.status || 'Novo',
+          vendedor: o.vendedor || '—',
+          lat: parseFloat(o.lat)||0, lng: parseFloat(o.lng)||0
+        });
+      });
+      showToast(`✓ ${obras.length} obras carregadas do banco`,'success');
+      document.querySelector('.ps').textContent = obras.length + ' obras ativas · banco de dados ao vivo';
+    }
+    await loadAlertasFromDB();
+    await loadTimeFromDB();
+    initDash();
+  } catch(e) { showToast('Erro ao carregar obras: ' + e.message,'error'); }
+}
+
+async function loadAlertasFromDB() {
+  if (!SB_READY) return;
+  const { data } = await sb.from('alertas').select('*').eq('lido', false).order('created_at',{ascending:false}).limit(10);
+  if (data && data.length > 0) {
+    ALERTAS.length = 0;
+    data.forEach(a => ALERTAS.push({t:a.tipo,ic:a.icone,tt:a.titulo,sb:a.sub,tm:timeAgo(a.created_at),id:a.id}));
+    const nb = document.querySelector('.nd');
+    if(nb) nb.style.display = ALERTAS.length > 0 ? 'block' : 'none';
+  }
+}
+
+async function loadTimeFromDB() {
+  if (!SB_READY) return;
+  const { data } = await sb.from('time_comercial').select('*').eq('ativo',true).order('id');
+  if (data && data.length > 0) {
+    TEAM.length = 0;
+    data.forEach(t => TEAM.push({ini:t.ini,nome:t.nome,region:t.region,obras:t.obras_mes||0,meta:t.meta||40,cor:t.cor||'#5E2DBF'}));
+  }
+}
+
+function timeAgo(ts) {
+  const diff = (Date.now() - new Date(ts)) / 1000;
+  if (diff < 60) return 'agora';
+  if (diff < 3600) return Math.floor(diff/60) + 'min';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h';
+  return Math.floor(diff/86400) + 'd';
+}
+
+// ── SALVAR STATUS DA OBRA ─────────────────────────────────────────
+async function salvarStatusObra(id, novoStatus) {
+  if (!SB_READY) return;
+  const { error } = await sb.from('obras').update({status:novoStatus, updated_at:new Date().toISOString()}).eq('id',id);
+  if (!error) {
+    const o = OBRAS.find(x=>x.id===id);
+    if(o) o.status = novoStatus;
+    showToast('✓ Status atualizado','success');
+  }
+}
+
+// ── REGISTRAR CONTATO ─────────────────────────────────────────────
+async function salvarRegistroContato(obraId, tipo, resultado, notas, vendedor) {
+  if (!SB_READY) { showToast('Registro salvo localmente','info'); return; }
+  const { error } = await sb.from('registros_contato').insert({obra_id:obraId, tipo, resultado, notas, vendedor, created_at:new Date().toISOString()});
+  if (!error) showToast('✓ Contato registrado no banco','success');
+  else showToast('Erro ao salvar: '+error.message,'error');
+}
+
+// ── CADASTRAR NOVA OBRA ───────────────────────────────────────────
+async function salvarNovaObra(dados) {
+  if (!SB_READY) { showToast('⚠ Banco não conectado — obra não salva','error'); return false; }
+  const { data, error } = await sb.from('obras').insert(dados).select().single();
+  if (error) { showToast('Erro: '+error.message,'error'); return false; }
+  OBRAS.push({...dados, id:data.id, contatos:[]});
+  showToast('✓ Obra cadastrada no banco!','success');
+  filtObras();
+  return true;
+}
+
+// ── MARCAR ALERTA COMO LIDO ───────────────────────────────────────
+async function marcarAlertaLido(id) {
+  if (!SB_READY || !id) return;
+  await sb.from('alertas').update({lido:true}).eq('id',id);
+}
+
+// ── CONFIGURAÇÕES — Groq + Vendedores ────────────────────────────
+const CORES_VENDEDOR = ['#5E2DBF','#1C7A3F','#D95F1A','#C0321A','#1655A8','#966010','#0a66c2'];
+
+function abrirConfig(){
+  const key = getGroqKey();
+  const inp = document.getElementById('cfgGroqKey');
+  if(inp && key) inp.value = key;
+  renderVendedoresConfig();
+  document.getElementById('mConfig').classList.add('open');
+}
+
+function salvarGroqKey(){
+  const v = document.getElementById('cfgGroqKey')?.value?.trim();
+  if(!v || v.length < 10){
+    showToast('Cole a chave Groq no campo primeiro','error');
+    document.getElementById('cfgGroqStatus').innerHTML='<span style="color:#C0321A">⚠ Chave vazia ou muito curta</span>';
+    return;
+  }
+  localStorage.setItem('obraradar_groq_key', v);
+  document.getElementById('cfgGroqStatus').innerHTML='<span style="color:#1655A8">✓ Chave salva! Testando agora...</span>';
+  showToast('Chave salva, testando conexão...','info');
+  testarGroqKey();
+}
+
+async function testarGroqKey(){
+  const key = getGroqKey();
+  const statusEl = document.getElementById('cfgGroqStatus');
+  if(!key){
+    if(statusEl) statusEl.innerHTML='<span style="color:#C0321A">⚠ Salve a chave primeiro</span>';
+    return;
+  }
+  if(statusEl) statusEl.innerHTML='<span style="color:#1655A8">⏳ Testando conexão com Groq...</span>';
+  try {
+    const r = await fetch(GROQ_ENDPOINT,{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model: GROQ_MODEL,
+        messages:[{role:'user',content:'responda apenas a palavra: OK'}],
+        max_tokens:5
+      })
+    });
+    const d = await r.json();
+    if(r.ok && d.choices){
+      if(statusEl) statusEl.innerHTML='<span style="color:#1C7A3F;font-weight:600">✅ Conexão OK! IA ativada e funcionando.</span>';
+      document.getElementById('bannerSetup').style.display='none';
+      showToast('✓ Groq AI conectada! Raio-X e Decisores ativados.','success');
+    } else {
+      const msg = d.error?.message || JSON.stringify(d);
+      if(statusEl) statusEl.innerHTML=`<span style="color:#C0321A">❌ Erro Groq: ${msg}</span>`;
+      showToast('Erro: '+msg,'error');
+    }
+  } catch(e){
+    // Possível erro de CORS — tentar via proxy
+    if(statusEl) statusEl.innerHTML=`<span style="color:#C0321A">❌ Erro de rede: ${e.message}<br><small>Verifique se a chave está correta e tente novamente</small></span>`;
+    showToast('Erro de conexão: '+e.message,'error');
+  }
+}
+
+function renderVendedoresConfig(){
+  const container = document.getElementById('cfgVendedores');
+  if(!container) return;
+  // Sempre usa USUARIOS como fonte da verdade
+  const vendedores = USUARIOS.filter(u=>u.tipo==='vendedor');
+  container.innerHTML = vendedores.map(u=>`
+    <div style="display:flex;align-items:center;gap:10px;background:var(--bg);padding:10px 12px;border-radius:var(--rs);border:1px solid var(--border)">
+      <div style="width:34px;height:34px;border-radius:50%;background:${u.cor};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0">${u.ini}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500;color:var(--text)">${u.nome}</div>
+        <div style="font-size:11px;color:var(--muted)">${u.tipo==='gestor'?'Gestor':'Vendedor'} · ${u.region||'Sul, Sudeste'}</div>
+      </div>
+      <span style="background:#EBF7EF;color:#1C7A3F;font-size:11px;padding:2px 10px;border-radius:20px;border:1px solid #9ADAB8">Ativo</span>
+    </div>`).join('')+
+    `<div style="margin-top:8px;padding:8px 12px;background:#EAF0FB;border-radius:var(--rs);font-size:12px;color:#1655A8">
+      ℹ️ Para adicionar ou remover usuários, edite o arquivo HTML (array USUARIOS).
+    </div>`;
+}
+
+function addVendedorRow(){
+  const cores = ['#5E2DBF','#1C7A3F','#D95F1A','#C0321A','#1655A8','#966010'];
+  TEAM.push({ ini:'NV', nome:'Novo Vendedor', region:'BR', obras:0, meta:40, cor:cores[TEAM.length%cores.length] });
+  renderVendedoresConfig();
+}
+
+function removerVendedor(i){
+  if(!confirm(`Remover ${TEAM[i].nome}?`)) return;
+  TEAM.splice(i,1);
+  renderVendedoresConfig();
+  showToast('Vendedor removido','info');
+}
+
+function salvarConfiguracoes(){
+  // Salva chave Groq se preenchida
+  const k = document.getElementById('cfgGroqKey')?.value?.trim();
+  if(k && k.startsWith('gsk_')) localStorage.setItem('obraradar_groq_key', k);
+  // Salva time no localStorage
+  localStorage.setItem('obraradar_team', JSON.stringify(TEAM));
+  document.getElementById('mConfig').classList.remove('open');
+  rendDTime();
+  rendTime();
+  showToast('✓ Configurações salvas!','success');
+}
+
+function carregarConfiguracoes(){
+  // Força limpeza de dados antigos — chave única garante que roda 1x por build
+  const resetKey = 'obraradar_reset_v17b';
+  if(!localStorage.getItem(resetKey)){
+    localStorage.removeItem('obraradar_team');
+    localStorage.removeItem('obraradar_user');
+    localStorage.removeItem('obraradar_version');
+    localStorage.setItem(resetKey,'1');
+  }
+  // SEMPRE sincroniza TEAM a partir de USUARIOS (fonte da verdade)
+  TEAM.length = 0;
+  USUARIOS.filter(u=>u.tipo==='vendedor').forEach(u=>{
+    TEAM.push({ini:u.ini, nome:u.nome, region:u.region, obras:0, meta:40, cor:u.cor, tel:u.tel});
+  });
+  // Mostra banner se não tem chave Groq
+  if(!getGroqKey()){
+    const b = document.getElementById('bannerSetup');
+    if(b) b.style.display='flex';
+  }
+}
+// ── NAVTO v1.7 — inclui novas views ──────────────────────────────
+function navTo(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const view=document.getElementById('view-'+id);
+  if(view)view.classList.add('active');
+  const ne=document.getElementById('nav-'+id);
+  if(ne)ne.classList.add('active');
+  if(id==='dashboard')initDash();
+  if(id==='obras'){document.getElementById('horaObras').textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});rendObras(obrasVisiveis());}
+  if(id==='crm')rendKanban();
+  if(id==='alertas'){document.getElementById('aHora').textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});rendAlertas();}
+  if(id==='time')rendTime();
+  if(id==='relatorios')initRel();
+  if(id==='raio-x'){const rx=document.getElementById('rxResult');if(rx)rx.innerHTML='';const ri=document.getElementById('rxInput');if(ri)ri.value='';}
+  if(id==='feed')rendFeed();
+  if(id==='espia'){const er=document.getElementById('espiaResult');if(er)er.innerHTML='';}
+}
+
+// ── FEED v1.7 ─────────────────────────────────────────────────────
+const FEED_ITEMS=[];
+function addFeedItem(nome,obra,tipo,resultado,notas){
+  FEED_ITEMS.unshift({nome,obra,tipo,resultado,notas,ts:new Date().toISOString()});
+  if(FEED_ITEMS.length>100)FEED_ITEMS.pop();
+  if(obra?.fase==='Acabamento')verificarAlertaAcabamento(obra,nome);
+}
+function rendFeed(){
+  const el=document.getElementById('feedList');if(!el)return;
+  if(!FEED_ITEMS.length){el.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--muted)"><i class="ti ti-activity" style="font-size:40px;display:block;margin-bottom:12px"></i>Nenhuma atividade ainda.</div>';return;}
+  const ics={'Ligação':'ti-phone','WhatsApp':'ti-brand-whatsapp','E-mail':'ti-mail','Email':'ti-mail','Visita':'ti-map-pin','Proposta':'ti-file-text'};
+  const cors={'Ligação':'#1655A8','WhatsApp':'#1C7A3F','E-mail':'#D95F1A','Email':'#D95F1A','Visita':'#5E2DBF','Proposta':'#C0321A'};
+  el.innerHTML=FEED_ITEMS.map(f=>{
+    const u=USUARIOS.find(x=>x.nome===f.nome)||{cor:'#666',ini:'?'};
+    const ic=ics[f.tipo]||'ti-message';const cor=cors[f.tipo]||'#666';
+    const dt=new Date(f.ts);
+    return `<div style="display:flex;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);align-items:flex-start;margin-bottom:8px">
+      <div style="width:36px;height:36px;border-radius:50%;background:${u.cor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${u.ini}</div>
+      <div style="flex:1"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:500">${f.nome}</span>
+        <span style="background:${cor}20;color:${cor};font-size:11px;padding:2px 8px;border-radius:20px"><i class="ti ${ic}"></i> ${f.tipo}</span>
+        <span style="font-size:11px;color:var(--muted)">${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>
+      </div>
+      <div style="font-size:12px"><strong>${f.obra}</strong> · ${f.resultado}</div>
+      ${f.notas?`<div style="font-size:12px;color:var(--muted);font-style:italic">"${f.notas}"</div>`:''}</div></div>`;
+  }).join('');
+}
+
+// ── ALERTA ACABAMENTO v1.7 ────────────────────────────────────────
+function verificarAlertaAcabamento(o,vendedorNome){
+  if(!o||o.fase!=='Acabamento')return;
+  const msg=`\u{1F6A8} *ObraRadar — Alerta Acabamento*\n\n*${o.nome}* entrou em Acabamento!\n\n\u{1F4CD} ${o.cidade||''}, ${o.uf||''} \u{1F3E2} ${o.empresa||''} \u{1F4DE} ${o.contato||''} ${o.tel||''}\n\nMomento ideal para portas automáticas. Contate hoje!`;
+  const tGestor=(USUARIOS.find(u=>u.tipo==='gestor')||{tel:'11940318727'}).tel;
+  ALERTAS.unshift({t:'danger',ic:'ti-alert-triangle',tt:`\u{26A0}\uFE0F Acabamento: ${o.nome}`,sb:`${o.cidade||''}, ${o.uf||''} · Prospecção urgente!`,tm:'agora'});
+  if(confirm(`\u{1F6A8} "${o.nome}" está em Acabamento!\nEnviar WhatsApp para gestor e vendedor?`)){
+    window.open(`https://wa.me/55${tGestor}?text=${encodeURIComponent(msg)}`,'_blank');
+    if(vendedorNome){const v=USUARIOS.find(u=>u.nome===vendedorNome);if(v)setTimeout(()=>window.open(`https://wa.me/55${v.tel}?text=${encodeURIComponent(msg)}`,'_blank'),800);}
+  }
+}
+
+// ── IMPORTADOR INTEC v1.7 ─────────────────────────────────────────
+function processarCSVIntec(file){
+  if(!file)return;
+  const preview=document.getElementById('intecPreview');
+  if(preview)preview.innerHTML='<div style="text-align:center;padding:20px"><div class="lring"></div><div style="font-size:13px;margin-top:8px">Processando...</div></div>';
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const lines=e.target.result.split(/\r?\n/).filter(l=>l.trim());
+      if(lines.length<2){showToast('CSV vazio','error');return;}
+      const headers=lines[0].split(/[;,]/).map(h=>h.trim().toLowerCase().replace(/"/g,''));
+      const getIdx=(...keys)=>{for(const k of keys){const i=headers.findIndex(h=>h.includes(k));if(i>=0)return i;}return -1;};
+      const iN=getIdx('nome','empreendimento','obra'),iC=getIdx('cidade','municipio'),iU=getIdx('uf','estado'),iF=getIdx('fase','etapa'),iE=getIdx('empresa','construtora'),iCt=getIdx('contato','responsavel'),iT=getIdx('telefone','fone'),iM=getIdx('email'),iSeg=getIdx('segmento','tipo'),iA=getIdx('area','m2');
+      const obras=[];
+      for(let i=1;i<lines.length;i++){
+        const c=lines[i].split(/[;,]/).map(x=>x.trim().replace(/"/g,''));
+        const nome=iN>=0?c[iN]:'';if(!nome)continue;
+        obras.push({id:OBRAS.length+1000+i,nome,tipo:'nova',fase:iF>=0?c[iF]:'Estrutura',segmento:iSeg>=0?c[iSeg]:'CONSTRUÇÃO',cidade:iC>=0?c[iC]:'',uf:iU>=0?c[iU]:'',empresa:iE>=0?c[iE]:'',contato:iCt>=0?c[iCt]:'',tel:iT>=0?c[iT]:'',email:iM>=0?c[iM]:'',m2:iA>=0?parseInt(c[iA])||0:0,status:'Novo',vendedor:'',lat:0,lng:0,intec:true,contatos:[]});
+      }
+      if(preview)preview.innerHTML=`<div style="background:#EBF7EF;border:1px solid #9ADAB8;border-radius:var(--rs);padding:14px;margin-bottom:12px"><strong style="color:#1C7A3F">✓ ${obras.length} obras detectadas</strong><br><span style="font-size:12px;color:#2D5A3D">${file.name}</span></div>
+        <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--rs);margin-bottom:12px">${obras.slice(0,5).map(o=>`<div style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px"><strong>${o.nome}</strong> · ${o.cidade}, ${o.uf}</div>`).join('')}${obras.length>5?`<div style="padding:8px 12px;font-size:12px;color:var(--muted);text-align:center">+${obras.length-5} obras</div>`:''}</div>
+        <button class="btn btn-p" style="width:100%;justify-content:center" onclick="importarObrasIntec(window._intecObras)"><i class="ti ti-download"></i>Importar ${obras.length} obras</button>`;
+      window._intecObras=obras;
+    }catch(err){if(preview)preview.innerHTML=`<div style="color:#C0321A;padding:12px">Erro: ${err.message}</div>`;}
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function importarObrasIntec(obras){
+  if(!obras)return;
+  let n=0;
+  for(const o of obras){if(!OBRAS.some(x=>x.nome.toLowerCase()===o.nome.toLowerCase())){OBRAS.push(o);n++;if(SB_READY&&sb)sb.from('obras').insert({...o,id:undefined});}}
+  showToast(`✓ ${n} obras importadas da INTEC!`,'success');navTo('obras');
+}
+
+// ── PDF ESPIÃO v1.7 ───────────────────────────────────────────────
+async function analisarPDFEspia(file){
+  if(!file)return;
+  const result=document.getElementById('espiaResult');
+  if(result)result.innerHTML='<div style="text-align:center;padding:40px"><div class="lring"></div><div style="font-size:14px;font-weight:500;margin-top:12px">Analisando PDF...</div><div style="font-size:12px;color:var(--muted);margin-top:4px">Identificando empresa e estratégia</div></div>';
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    const textR=new FileReader();
+    textR.onload=async function(te){
+      const txt=te.target.result.slice(0,3000);
+      try{
+        const raw=await callAI('Especialista em inteligência competitiva industrial. Analise PDFs de orçamentos e extraia dados JSON.',`Analise este conteúdo de PDF de orçamento de concorrente (portas automáticas) e retorne APENAS JSON:\n{"empresa_cliente":"nome","cnpj":"","endereco_obra":"","cidade":"","uf":"SP","tipo_obra":"","area_m2":0,"valor_orcamento":"","concorrente":"","produtos_concorrente":[],"pontos_fracos_concorrente":[],"estrategia_contra":"como virar este cliente em 2 frases","urgencia":"alta","contato_encontrado":"","email_encontrado":"","tel_encontrado":""}\n\nCONTEÚDO:\n${txt}`,1500);
+        const r=parseAIJson(raw);
+        window._espiaData=r;
+        if(result)result.innerHTML=renderEspiaResult(r,file.name);
+      }catch(err){if(result)result.innerHTML=`<div style="color:#C0321A;padding:12px">Erro: ${err.message}</div>`;}
+    };
+    textR.readAsText(file);
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderEspiaResult(r,fn){
+  const urgBg=r.urgencia==='alta'?'#FFEAED':r.urgencia==='media'?'#FFF8E6':'#EAF0FB';
+  const urgC=r.urgencia==='alta'?'#C0321A':r.urgencia==='media'?'#966010':'#1655A8';
+  const nome=(r.empresa_cliente||'Não identificado').replace(/'/g,'');
+  const cidade=(r.cidade||'').replace(/'/g,'');
+  const uf=(r.uf||'SP').replace(/'/g,'');
+  return `<div style="background:#F2EDFF;border:1px solid #C9B8F5;border-radius:var(--rs);padding:12px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
+    <span style="font-size:20px">🕵️</span>
+    <div style="flex:1"><strong style="color:#5E2DBF">PDF analisado: ${fn}</strong><br><span style="font-size:12px;color:var(--muted)">Concorrente: ${r.concorrente||'—'}</span></div>
+    <span style="background:${urgBg};color:${urgC};font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">Urgência: ${(r.urgencia||'media').toUpperCase()}</span>
+  </div>
+  <div class="g2" style="margin-bottom:12px">
+    <div class="card"><div class="ct"><span>🏢 Empresa Cliente</span></div>
+      <div style="font-size:14px;font-weight:600">${r.empresa_cliente||'—'}</div>
+      ${r.cnpj?`<div style="font-size:12px;color:var(--muted)">CNPJ: ${r.cnpj}</div>`:''}
+      <div style="font-size:12px;color:var(--muted)">${r.cidade||'—'}, ${r.uf||'—'}</div>
+      ${r.tipo_obra?`<div style="margin-top:6px"><span style="background:#EAF0FB;color:#1655A8;font-size:11px;padding:2px 8px;border-radius:20px">${r.tipo_obra}</span></div>`:''}
+    </div>
+    <div class="card"><div class="ct"><span>💰 Orçamento Concorrente</span></div>
+      <div style="font-size:18px;font-weight:700;color:#C0321A">${r.valor_orcamento||'—'}</div>
+      ${(r.produtos_concorrente||[]).map(p=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--border);display:flex;gap:6px"><span style="color:#C0321A">→</span>${p}</div>`).join('')}
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px;border-left:4px solid #5E2DBF">
+    <div class="ct"><span>🎯 Estratégia para virar o cliente</span></div>
+    <div style="font-size:13px;line-height:1.7">${r.estrategia_contra||'—'}</div>
+    ${(r.pontos_fracos_concorrente||[]).length?`<div style="margin-top:10px">${r.pontos_fracos_concorrente.map(p=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--border);display:flex;gap:8px"><span style="color:#1C7A3F;font-weight:700">✓</span>${p}</div>`).join('')}</div>`:''}</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-p" onclick="(()=>{const d=window._espiaData||{};const o={id:OBRAS.length+9000+Date.now()%1000,nome:'[ESPIÃO] '+(d.empresa_cliente||'Empresa').slice(0,40),tipo:'nova',fase:'Estrutura',segmento:d.tipo_obra||'COMERCIAL',cidade:d.cidade||'',uf:d.uf||'SP',empresa:d.empresa_cliente||'',contato:d.contato_encontrado||'',tel:d.tel_encontrado||'',email:d.email_encontrado||'',detalhes:'PDF Espião. Concorrente: '+(d.concorrente||''),m2:d.area_m2||0,status:'Novo',vendedor:'',lat:0,lng:0,intec:false,contatos:[]};OBRAS.push(o);filtObras();navTo('obras');showToast('✓ Obra criada!','success');})()"><i class="ti ti-plus"></i>Criar obra no banco</button>
+    <button class="btn btn-s" onclick="(()=>{navTo('contatos');const ci=document.getElementById('ciInput');if(ci){ci.value=(window._espiaData||{}).empresa_cliente||'';}setTimeout(buscarD,300);})()"><i class="ti ti-brain"></i>Buscar decisores</button>
+  </div>`;
+}
+
+(async () => {
+  document.getElementById('dataBadge').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
+  carregarConfiguracoes();
+  renderLoginCards();
+  iniciarSessao();
+  initDash();
+  if(SB_URL){ const ok=await initSupabase(); if(ok) await loadObrasFromDB(); }
+})();
+
+</script>
+</body>
+</html>
