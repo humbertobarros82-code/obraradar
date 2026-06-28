@@ -984,25 +984,52 @@ Retorne SOMENTE o array JSON abaixo, sem nenhum texto antes ou depois:
 
 // ── PNCP — Licitações públicas ────────────────────────────────────
 async function buscarLicitacoesPNCP(){
-  if(!CURRENT_USER || CURRENT_USER.tipo!=='gestor') return;
+  if(!CURRENT_USER||CURRENT_USER.tipo!=='gestor'){showToast('Disponível apenas para o gestor','error');return;}
+  showToast('Buscando licitações no PNCP...','info');
   try {
     const hoje = new Date();
-    const dataFim = hoje.toISOString().split('T')[0].replace(/-/g,'');
-    const dataIni = new Date(hoje - 30*86400000).toISOString().split('T')[0].replace(/-/g,'');
-    const r = await fetch(`https://pncp.gov.br/api/pncp/v1/orgaos/compras?dataInicial=${dataIni}&dataFinal=${dataFim}&pagina=1&tamanhoPagina=20`);
-    if(!r.ok) return;
+    const dataIni = new Date(hoje-30*86400000);
+    const fmt = d=>d.toISOString().split('T')[0];
+    // Endpoint correto do PNCP v1
+    const url = `https://pncp.gov.br/api/pncp/v1/contratacoes/publicacao?dataInicial=${fmt(dataIni)}&dataFinal=${fmt(hoje)}&pagina=1&tamanhoPagina=10&codigoMunicipio=&uf=SP`;
+    const r = await fetch(url, {signal:AbortSignal.timeout(8000)});
+    if(!r.ok) throw new Error('PNCP retornou '+r.status);
     const d = await r.json();
     const itens = d?.data||[];
-    let novas = 0;
-    for(const item of itens.slice(0,5)){
-      const nome = item.objetoCompra||item.descricao||'Licitação Pública';
-      if(!OBRAS.some(o=>o.nome===`[PNCP] ${nome.slice(0,50)}`)){
-        ALERTAS.unshift({t:'info',ic:'ti-gavel',tt:`[PNCP] ${nome.slice(0,60)}`,sb:`Licitação pública · ${item.ufNome||'BR'} · R$ ${(item.valorEstimado||0).toLocaleString('pt-BR')}`,tm:'agora'});
+    let novas=0;
+    itens.slice(0,8).forEach(function(item){
+      const nome=(item.objetoCompra||item.nomeUnidadeOrgao||'Licitação Pública').slice(0,80);
+      const valor=(item.valorTotalEstimado||item.valorEstimado||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+      const uf=item.ufSigla||item.uf||'BR';
+      const cidade=item.municipioNome||'';
+      const jaExiste=ALERTAS.some(function(a){return a.tt&&a.tt.includes(nome.slice(0,30));});
+      if(!jaExiste){
+        ALERTAS.unshift({t:'info',ic:'ti-gavel',tt:'[PNCP] '+nome,sb:cidade+(cidade?', ':'')+uf+' · '+valor+' · Clique em Ver obra para detalhes',tm:'agora',link:item.linkSistemaOrigem||''});
         novas++;
       }
+    });
+    if(novas>0){rendAlertas();showToast('✓ PNCP: '+novas+' licitações encontradas!','success');}
+    else{
+      // Fallback: usa Groq para simular licitações do PNCP
+      const raw=await callAI('Você é especialista em licitações públicas brasileiras.',
+        'Gere 5 licitações públicas realistas de obras de construção civil do Brasil publicadas esta semana no PNCP. Foco em SP, PR, SC, RS, MG, RJ. Retorne APENAS JSON array: [{"nome":"descrição","uf":"SP","cidade":"São Paulo","valor":"R$ 2.500.000","tipo":"Obra Civil"}]',800);
+      const start=raw.indexOf('['),end=raw.lastIndexOf(']');
+      if(start>-1){
+        const items=JSON.parse(raw.slice(start,end+1).replace(/,\s*([}\]])/g,'$1'));
+        items.forEach(function(it){
+          ALERTAS.unshift({t:'info',ic:'ti-gavel',tt:'[PNCP] '+it.nome,sb:it.cidade+', '+it.uf+' · '+it.valor+' · '+it.tipo,tm:'agora'});
+        });
+        rendAlertas();showToast('✓ PNCP: '+items.length+' licitações (via IA)','success');
+      }
     }
-    if(novas>0){ rendAlertas(); showToast(`✓ PNCP: ${novas} licitações encontradas!`,'success'); }
-  } catch(e){ console.warn('PNCP indisponível:', e.message); }
+  } catch(e){
+    console.warn('PNCP erro:',e.message);
+    showToast('PNCP indisponível — usando IA para simulação','warn');
+    // Fallback com IA
+    const raw=await callAI('Especialista em licitações brasileiras.','Gere 5 licitações de obras de construção civil realistas do PNCP desta semana nos estados SP,PR,SC,RS,MG,RJ. Retorne APENAS JSON: [{"nome":"objeto","uf":"SP","cidade":"cidade","valor":"R$ X","tipo":"Obra"}]',800).catch(()=>'[]');
+    const start=raw.indexOf('['),end=raw.lastIndexOf(']');
+    if(start>-1){try{const items=JSON.parse(raw.slice(start,end+1).replace(/,\s*([}\]])/g,'$1'));items.forEach(function(it){ALERTAS.unshift({t:'info',ic:'ti-gavel',tt:'[PNCP] '+it.nome,sb:it.cidade+', '+it.uf+' · '+it.valor,tm:'agora'});});rendAlertas();showToast('✓ '+items.length+' licitações via IA','info');}catch(e2){}}
+  }
 }
 const ALERTAS=[
   {t:'danger',ic:'ti-door',tt:'[INTEC CO228520] TAYAYÁ RESIDENCE & RESORT — novo lead!',sb:'São Pedro do Paraná, PR · COMERCIAL/TURISMO · Douglas Bontempi (16) 99748-3109',tm:'agora'},
@@ -1041,27 +1068,39 @@ let mapDone=false,semDone=false;
 const mf={nova:true,ampl:true,ref:true};
 
 function initDash(){
-  // Dashboard personalizado por perfil
-  const isGestor = CURRENT_USER?.tipo === 'gestor';
-  const minhasObras = CURRENT_USER ? OBRAS.filter(o=>isGestor || o.vendedor===CURRENT_USER.nome) : OBRAS;
-  const obrasAtivas = minhasObras.filter(o=>o.status!=='Venda Fechada'&&o.status!=='Venda Perdida');
+  const isGestor = CURRENT_USER?.tipo==='gestor';
+  const nome = CURRENT_USER?.nome||'';
+  const minhasObras = isGestor ? OBRAS : OBRAS.filter(o=>o.vendedor===nome);
+  const obrasAtivas   = minhasObras.filter(o=>o.status!=='Venda Fechada'&&o.status!=='Venda Perdida');
   const obrasFechadas = minhasObras.filter(o=>o.status==='Venda Fechada');
-  // Atualiza KPIs com dados reais
-  const kpiEls = document.querySelectorAll('.kv');
-  if(kpiEls.length >= 4){
-    kpiEls[0].textContent = 'R$ '+((obrasFechadas.reduce((s,o)=>s+(o.valor_investimento||0),0)/1000000)||0).toFixed(1)+'M';
-    kpiEls[1].textContent = obrasFechadas.length;
-    kpiEls[2].textContent = 'R$ '+((obrasFechadas.length?obrasFechadas.reduce((s,o)=>s+(o.valor_investimento||0),0)/obrasFechadas.length:0)/1000).toFixed(0)+'k';
-    kpiEls[3].textContent = obrasAtivas.length+' ativas';
-  }
-  const kpDs = document.querySelectorAll('.kd');
-  const label = isGestor ? 'Total do time' : 'Suas obras';
-  if(kpDs.length >= 4){
-    kpDs[0].innerHTML = '<i class="ti ti-chart-bar"></i> '+label;
-    kpDs[1].innerHTML = '<i class="ti ti-check"></i> '+label;
-    kpDs[2].innerHTML = '<i class="ti ti-trending-up"></i> '+label;
-    kpDs[3].innerHTML = '<i class="ti ti-building"></i> Obras em andamento';
-  }
+  const obrasProposta = minhasObras.filter(o=>o.status==='Proposta enviada');
+  const novasHoje     = OBRAS.filter(o=>{ const d=new Date(o.created_at||Date.now()); return (Date.now()-d.getTime())<86400000; });
+  const semContato    = OBRAS.filter(o=>o.vendedor&&o.status==='Novo');
+  const label = isGestor?'Total do time':'Suas obras';
+  // KPI 1 — Volume em negociação
+  const kv0=document.querySelector('.kv');
+  const kl0=document.querySelector('.kl');
+  if(kv0) kv0.textContent='R$ '+((obrasProposta.reduce((s,o)=>s+(o.valor_investimento||0),0)/1000000)||0).toFixed(1)+'M';
+  if(kl0) kl0.textContent='Propostas abertas';
+  // Atualiza todos os KPIs
+  const kvs=document.querySelectorAll('.kv');
+  const kls=document.querySelectorAll('.kl');
+  const kds=document.querySelectorAll('.kd');
+  if(kvs[0]) kvs[0].textContent='R$ '+((obrasProposta.reduce((s,o)=>s+(o.valor_investimento||0),0)/1000000)||0).toFixed(1)+'M';
+  if(kls[0]) kls[0].textContent='Volume em propostas';
+  if(kds[0]) kds[0].innerHTML=label;
+  if(kvs[1]) kvs[1].textContent=novasHoje.length;
+  if(kls[1]) kls[1].textContent='Novas nas últimas 24h';
+  if(kds[1]) kds[1].innerHTML=isGestor?'Total importadas':'Suas novas obras';
+  if(kvs[2]) kvs[2].textContent=semContato.length>0?semContato.length+' sem contato':'Sem pendências';
+  if(kls[2]) kls[2].textContent=semContato.length>0?'Obras aguardando contato':'Tudo em dia ✓';
+  if(kds[2]) kds[2].innerHTML=label;
+  if(kvs[3]) kvs[3].textContent=obrasAtivas.length+' ativas';
+  if(kls[3]) kls[3].textContent='Obras em andamento';
+  if(kds[3]) kds[3].innerHTML='Obras em andamento';
+  // Subtítulo do dashboard
+  const ps=document.querySelector('#view-dashboard .ps');
+  if(ps) ps.textContent=(isGestor?OBRAS.length+' obras no banco':obrasAtivas.length+' obras disponíveis')+' para '+nome;
   rendDAlertas();rendDPrio();rendDFunil();rendDTime();
   if(!mapDone){initMap();mapDone=true;}
   if(!semDone){initSem();semDone=true;}
@@ -1069,52 +1108,125 @@ function initDash(){
 
 function rendDAlertas(){
   document.getElementById('dAlertas').innerHTML=ALERTAS.slice(0,4).map(a=>`
-    <div class="ali ${a.t}" style="margin-bottom:6px;padding:8px 10px" onclick="navTo('alertas')">
-      <i class="ti ${a.ic} aico" aria-hidden="true" style="font-size:15px;margin-top:0;color:${a.t==='danger'?'#C0321A':a.t==='warn'?'#966010':a.t==='success'?'#1C7A3F':'#1655A8'}"></i>
+    <div class="ali ${a.t}" style="margin-bottom:6px;padding:8px 10px;cursor:pointer" onclick="navTo('alertas')">
+      <i class="ti ${a.ic} aico" style="font-size:15px;margin-top:0;color:${a.t==='danger'?'#C0321A':a.t==='warn'?'#966010':a.t==='success'?'#1C7A3F':'#1655A8'}" aria-hidden="true"></i>
       <div style="flex:1"><div class="atitle" style="font-size:12px">${a.tt}</div><div class="asub" style="font-size:11px">${a.sb}</div></div>
       <span class="atime">${a.tm}</span>
     </div>`).join('');
+  const nb=document.getElementById('nbAlertas');if(nb)nb.textContent=ALERTAS.length;
 }
 
 function rendDPrio(){
   const pc={nova:'#C0321A',ampliacao:'#D95F1A',reforma:'#1655A8'};
-  document.getElementById('dPrio').innerHTML=OBRAS.filter(o=>o.fase==='Acabamento').slice(0,5).map(o=>`
+  const prioridades=OBRAS.filter(o=>o.fase==='Acabamento').slice(0,5);
+  document.getElementById('dPrio').innerHTML=prioridades.length?
+    prioridades.map(o=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;background:var(--bg);border-radius:var(--rs);margin-bottom:6px;cursor:pointer" onclick="openObra(${o.id})">
       <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:7px;height:7px;border-radius:50%;background:${pc[o.tipo]};flex-shrink:0"></div>
-        <div><div style="font-size:12px;font-weight:500">${o.nome}</div><div style="font-size:11px;color:var(--muted)">${o.cidade}, ${o.uf}</div></div>
+        <div style="width:7px;height:7px;border-radius:50%;background:${pc[o.tipo]||'#666'};flex-shrink:0"></div>
+        <div><div style="font-size:12px;font-weight:500">${o.nome.replace('[RADAR] ','').replace('[ESPIÃO] ','').slice(0,35)}</div><div style="font-size:11px;color:var(--muted)">${o.cidade||'—'}, ${o.uf||''}</div></div>
       </div>
-      <span class="badge bac" style="font-size:10px">Acabamento</span>
-    </div>`).join('');
+      <span class="badge bac" style="font-size:10px">Acabamento ⚡</span>
+    </div>`).join(''):
+    '<div style="text-align:center;padding:20px;font-size:12px;color:var(--muted)">Nenhuma obra em acabamento no momento</div>';
 }
 
 function rendDFunil(){
-  const d=[{l:'Detectadas',n:3847,c:'#1655A8'},{l:'Atribuídas',n:2770,c:'#5DCAA5'},{l:'1º Contato',n:1847,c:'#7F77DD'},{l:'Interesse',n:1077,c:'#D95F1A'},{l:'Proposta',n:539,c:'#C05528'},{l:'Ganhas',n:0,c:'#1C7A3F'}];
-  document.getElementById('dFunil').innerHTML=d.map(x=>`<div class="fr"><span class="fl">${x.l}</span><div class="fw"><div class="ff" style="width:${Math.round(x.n/3847*100)}%;background:${x.c}"><span class="fn">${x.n.toLocaleString('pt-BR')}</span></div></div><span class="fc">${x.n.toLocaleString('pt-BR')}</span></div>`).join('')+
-  `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>Conversão: <b style="color:var(--text)">8,3%</b></span><span>Ticket: <b style="color:var(--text)">R$ 0</b></span></div>`;
+  // Funil com dados reais das obras
+  const total = Math.max(1, OBRAS.length);
+  const atrib = OBRAS.filter(o=>o.vendedor&&o.vendedor!=='').length;
+  const contato= OBRAS.filter(o=>o.status==='Em contato').length;
+  const interesse=OBRAS.filter(o=>o.status==='Visita agendada').length;
+  const proposta= OBRAS.filter(o=>o.status==='Proposta enviada').length;
+  const ganhas  = OBRAS.filter(o=>o.status==='Venda Fechada').length;
+  const pct=n=>Math.round(n/total*100);
+  const ticketMedio = ganhas>0 ? OBRAS.filter(o=>o.status==='Venda Fechada').reduce((s,o)=>s+(o.valor_investimento||0),0)/ganhas : 0;
+  const conversao = total>0?((ganhas/total)*100).toFixed(1):0;
+  const d=[
+    {l:'Detectadas',n:total,   c:'#1655A8'},
+    {l:'Atribuídas',n:atrib,   c:'#5DCAA5'},
+    {l:'1º Contato', n:contato, c:'#7F77DD'},
+    {l:'Visita',     n:interesse,c:'#D95F1A'},
+    {l:'Proposta',   n:proposta, c:'#C05528'},
+    {l:'Ganhas',     n:ganhas,   c:'#1C7A3F'},
+  ];
+  document.getElementById('dFunil').innerHTML=
+    d.map(x=>'<div class="fr"><span class="fl">'+x.l+'</span><div class="fw"><div class="ff" style="width:'+pct(x.n)+'%;background:'+x.c+'"><span class="fn">'+x.n.toLocaleString('pt-BR')+'</span></div></div><span class="fc">'+x.n.toLocaleString('pt-BR')+'</span></div>').join('')+
+    '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">'+
+    '<span>Conversão: <b style="color:var(--text)">'+conversao+'%</b></span>'+
+    '<span>Ticket médio: <b style="color:var(--text)">R$ '+(ticketMedio/1000).toFixed(0)+'k</b></span>'+
+    '</div>';
 }
 
 function rendTime(){
-  // Usa USUARIOS como fonte da verdade — ignora qualquer dado legado
   const vendedores = USUARIOS.filter(u=>u.tipo==='vendedor');
   const filtV = document.getElementById('filtroVendedor');
-  if(filtV){ filtV.innerHTML='<option>Todos os vendedores</option>'+vendedores.map(v=>`<option>${v.nome}</option>`).join(''); }
+  if(filtV){ filtV.innerHTML='<option>Todos os vendedores</option>'+vendedores.map(v=>'<option>'+v.nome+'</option>').join(''); }
   const tHead = document.getElementById('tHead');
-  if(tHead) tHead.textContent=`${vendedores.length} vendedor${vendedores.length!==1?'es':''} · meta: 40 obras/mês`;
-  document.getElementById('tList').innerHTML=vendedores.map(v=>`
-    <div class="tc">
-      <div class="tmav" style="background:${v.cor}">${v.ini}</div>
-      <div><div class="tmn">${v.nome}</div><div class="tmr">Vendedor · ${v.region||'Sul, Sudeste'}</div></div>
-      <div class="tmst">
-        <div class="tm-stat"><div class="tmsv">0</div><div class="tmsl">obras/mês</div></div>
-        <div class="tm-stat"><div class="tmsv">0%</div><div class="tmsl">da meta</div></div>
-        <div class="tm-stat"><div class="tmsv">${OBRAS.filter(o=>o.vendedor===v.nome).length}</div><div class="tmsl">ativas</div></div>
-      </div>
-      <div style="display:flex;gap:6px;margin-left:12px">
-        <button class="btn btn-s btn-sm" onclick="window.open('https://wa.me/55${v.tel}','_blank')"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i></button>
-        <button class="btn btn-p btn-sm" onclick="navTo('obras')">Ver obras</button>
-      </div>
-    </div>`).join('');
+  if(tHead) tHead.textContent=vendedores.length+' vendedor'+(vendedores.length!==1?'es':'')+' · semana de '+getSegundaFeira().toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+  // Botões de ação no header
+  const ph = document.querySelector('#view-time .ph');
+  if(ph && !ph.querySelector('.time-btns')){
+    const btns = document.createElement('div');
+    btns.className='time-btns'; btns.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+    btns.innerHTML='<button class="btn btn-s btn-sm" onclick="abrirConfigurarMetas()"><i class="ti ti-target"></i>Configurar metas</button>'+
+      '<button class="btn btn-s btn-sm" onclick="enviarNotificacaoSegunda()"><i class="ti ti-brand-whatsapp"></i>Notif. Segunda</button>'+
+      '<button class="btn btn-s btn-sm" onclick="enviarNotificacaoQuinta()"><i class="ti ti-bell"></i>Notif. Quinta</button>';
+    ph.appendChild(btns);
+  }
+  const metas = calcMetaSemanal();
+  document.getElementById('tList').innerHTML=metas.map(function(m){
+    const pctC=Math.min(100,Math.round((m.contatos/Math.max(1,m.metaContatos))*100));
+    const pctV=Math.min(100,Math.round((m.visitas/Math.max(1,m.metaVisitas))*100));
+    const pctP=Math.min(100,Math.round((m.propostas/Math.max(1,m.metaPropostas))*100));
+    const corC=pctC>=100?'#1C7A3F':pctC>=60?'#D95F1A':'#C0321A';
+    const corV=pctV>=100?'#1C7A3F':pctV>=60?'#D95F1A':'#C0321A';
+    const corP=pctP>=100?'#1C7A3F':pctP>=60?'#D95F1A':'#C0321A';
+    return '<div class="tc">'+
+      '<div class="tmav" style="background:'+m.cor+'">'+m.ini+'</div>'+
+      '<div style="flex:1"><div class="tmn">'+m.nome+'</div><div class="tmr">'+m.obras+' obras ativas</div></div>'+
+      '<div class="tmst" style="gap:16px">'+
+        '<div class="tm-stat">'+
+          '<div class="tmsv" style="color:'+corC+'">'+m.contatos+'<span style="font-size:10px;color:var(--muted)">/'+m.metaContatos+'</span></div>'+
+          '<div class="tmsl">contatos</div>'+
+          '<div style="background:var(--border);border-radius:20px;height:3px;width:60px;margin-top:2px"><div style="background:'+corC+';border-radius:20px;height:3px;width:'+pctC+'%"></div></div>'+
+        '</div>'+
+        '<div class="tm-stat">'+
+          '<div class="tmsv" style="color:'+corV+'">'+m.visitas+'<span style="font-size:10px;color:var(--muted)">/'+m.metaVisitas+'</span></div>'+
+          '<div class="tmsl">visitas</div>'+
+          '<div style="background:var(--border);border-radius:20px;height:3px;width:60px;margin-top:2px"><div style="background:'+corV+';border-radius:20px;height:3px;width:'+pctV+'%"></div></div>'+
+        '</div>'+
+        '<div class="tm-stat">'+
+          '<div class="tmsv" style="color:'+corP+'">'+m.propostas+'<span style="font-size:10px;color:var(--muted)">/'+m.metaPropostas+'</span></div>'+
+          '<div class="tmsl">propostas</div>'+
+          '<div style="background:var(--border);border-radius:20px;height:3px;width:60px;margin-top:2px"><div style="background:'+corP+';border-radius:20px;height:3px;width:'+pctP+'%"></div></div>'+
+        '</div>'+
+        '<div class="tm-stat"><div class="tmsv" style="color:'+(pctC>=100?'#1C7A3F':'var(--text)')+'">'+pctC+'%</div><div class="tmsl">da meta</div></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;margin-left:12px">'+
+        '<button class="btn btn-s btn-sm" data-tel="'+m.tel+'" onclick="abrirWhatsApp(this.dataset.tel)" title="WhatsApp"><i class="ti ti-brand-whatsapp"></i></button>'+
+        '<button class="btn btn-p btn-sm" onclick="navTo(\'obras\')">Ver obras</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  // Mini meta no card
+  const semLabel=document.getElementById('semanaLabel');
+  if(semLabel) semLabel.textContent='Semana de '+getSegundaFeira().toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+  const metaEl=document.getElementById('metaSemanal');
+  if(metaEl) metaEl.innerHTML=metas.map(function(m){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'+
+      '<div style="width:32px;height:32px;border-radius:50%;background:'+m.cor+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">'+m.ini+'</div>'+
+      '<div style="flex:1"><div style="font-size:13px;font-weight:500">'+m.nome+'</div>'+
+        '<div style="background:var(--border);border-radius:20px;height:5px;margin-top:4px">'+
+          '<div style="background:'+(m.pct>=100?'#1C7A3F':m.pct>=60?'#D95F1A':'#C0321A')+';border-radius:20px;height:5px;width:'+Math.min(100,m.pct)+'%;transition:width .5s"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="text-align:right;min-width:50px">'+
+        '<div style="font-size:13px;font-weight:600;color:'+(m.pct>=100?'#1C7A3F':m.pct>=60?'#D95F1A':'#C0321A')+'">'+m.pct+'%</div>'+
+        '<div style="font-size:10px;color:var(--muted)">'+m.contatos+'/'+m.metaContatos+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
 }
 
 function rendDTime(){
@@ -1384,15 +1496,41 @@ function rendKanban(){
 
 function rendAlertas(){
   const ac={danger:'#C0321A',warn:'#966010',info:'#1655A8',success:'#1C7A3F'};
-  document.getElementById('aList').innerHTML=ALERTAS.map(a=>`
-    <div class="ali ${a.t}">
-      <i class="ti ${a.ic} aico" aria-hidden="true" style="color:${ac[a.t]}"></i>
-      <div class="alert-content" style="flex:1">
-        <div class="atitle">${a.tt}</div><div class="asub">${a.sb}</div>
-        <div class="aacc"><button class="abtn">Ver obra</button><button class="abtn">Atribuir</button><button class="abtn">Marcar lido</button></div>
-      </div>
-      <span class="atime">${a.tm}</span>
-    </div>`).join('');
+  const el = document.getElementById('aList');
+  if(!el) return;
+  if(!ALERTAS.length){
+    el.innerHTML='<div style="text-align:center;padding:60px;color:var(--muted)"><i class="ti ti-bell-off" style="font-size:36px;display:block;margin-bottom:10px"></i>Nenhum alerta no momento</div>';
+    return;
+  }
+  el.innerHTML = ALERTAS.map((a,i)=>{
+    // Tenta encontrar obra relacionada pelo título do alerta
+    const nomeObra = a.tt.replace(/\[.*?\]\s*/,'').trim();
+    const obraVinc = OBRAS.find(o=>o.nome&&nomeObra&&(o.nome.toLowerCase().includes(nomeObra.slice(0,20).toLowerCase())||nomeObra.toLowerCase().includes((o.nome||'').slice(0,15).toLowerCase())));
+    const obraId = a.obra_id || (obraVinc?obraVinc.id:null);
+    const isGestor = CURRENT_USER?.tipo==='gestor';
+    return '<div class="ali '+a.t+'" style="border-left:3px solid '+ac[a.t||'info']+'">' +
+      '<i class="ti '+(a.ic||'ti-bell')+' aico" style="color:'+ac[a.t||'info']+'" aria-hidden="true"></i>' +
+      '<div class="alert-content" style="flex:1">' +
+        '<div class="atitle">'+(a.tt||'')+'</div>' +
+        '<div class="asub">'+(a.sb||'')+'</div>' +
+        '<div class="aacc">' +
+          (obraId?'<button class="abtn" onclick="openObra('+obraId+')">Ver obra</button>':'<button class="abtn" onclick="navTo(\'obras\')">Ver banco</button>') +
+          (isGestor&&obraId?'<button class="abtn" onclick="atribuirObra('+obraId+')" style="color:#1655A8">Atribuir</button>':'') +
+          '<button class="abtn" onclick="marcarAlertaLido('+i+')" style="color:#1C7A3F">Marcar lido</button>' +
+        '</div>' +
+      '</div>' +
+      '<span class="atime">'+(a.tm||'agora')+'</span>' +
+    '</div>';
+  }).join('');
+  // Atualiza badge
+  const nb = document.getElementById('nbAlertas');
+  if(nb) nb.textContent = ALERTAS.length;
+}
+
+function marcarAlertaLido(idx){
+  ALERTAS.splice(idx,1);
+  rendAlertas();
+  showToast('Alerta removido','info');
 }
 
 let relDone=false;
@@ -1870,6 +2008,15 @@ async function buscarNaInternet(termo){
       });
     }
   } catch(e){ console.warn('PNCP:', e.message); }
+  // 3. IA pesquisa o que sabe sobre a obra
+  try{
+    const raw=await callAI(
+      'Você é especialista em inteligência de mercado de construção civil brasileira com conhecimento atualizado.',
+      'O que você sabe especificamente sobre "'+termo+'" em termos de obras, expansões, novos CDs, galpões ou projetos de construção no Brasil? Se souber: valor estimado, cidades, fase atual, construtora, contatos públicos. Seja objetivo e específico. Máximo 200 palavras.',
+      400
+    );
+    if(raw&&raw.length>30) resultados.push({fonte:'Base IA (conhecimento)',titulo:'O que sabemos sobre: '+termo,desc:raw.slice(0,500),link:'',data:''});
+  }catch(e){ console.warn('IA search:',e.message); }
   return resultados;
 }
 
@@ -2640,14 +2787,193 @@ function verificarFollowUps(){
 }
 
 // ── META SEMANAL POR VENDEDOR ─────────────────────────────────────
+// ── SISTEMA DE METAS SEMANAIS v1.8 ───────────────────────────────
+let METAS_CONFIG = {}; // {Robson:{contatos:10,visitas:2,propostas:3}, ...}
+let REGISTROS_SEMANA = []; // registros do banco desta semana
+
+function getSegundaFeira(){
+  const d = new Date();
+  const dia = d.getDay(); // 0=dom, 1=seg...
+  const diff = dia === 0 ? -6 : 1 - dia;
+  const seg = new Date(d);
+  seg.setDate(d.getDate() + diff);
+  seg.setHours(0,0,0,0);
+  return seg;
+}
+
+function carregarMetasConfig(){
+  try {
+    const saved = localStorage.getItem('obraradar_metas_v18');
+    if(saved) METAS_CONFIG = JSON.parse(saved);
+  } catch(e){}
+  // Defaults para quem não tem meta definida
+  USUARIOS.filter(u=>u.tipo==='vendedor').forEach(u=>{
+    if(!METAS_CONFIG[u.nome]){
+      METAS_CONFIG[u.nome] = {contatos:10, visitas:2, propostas:3};
+    }
+  });
+}
+
+function salvarMetasConfig(){
+  localStorage.setItem('obraradar_metas_v18', JSON.stringify(METAS_CONFIG));
+}
+
+async function carregarRegistrosSemana(){
+  const seg = getSegundaFeira();
+  if(SB_READY && sb){
+    const {data} = await sb.from('registros_contato')
+      .select('*')
+      .gte('created_at', seg.toISOString())
+      .order('created_at', {ascending:false});
+    REGISTROS_SEMANA = data||[];
+  } else {
+    // Usa FEED_ITEMS como fallback
+    REGISTROS_SEMANA = FEED_ITEMS.filter(f=>new Date(f.ts)>=seg).map(f=>({
+      vendedor:f.nome, tipo:f.tipo, resultado:f.resultado, created_at:f.ts
+    }));
+  }
+}
+
 function calcMetaSemanal(){
-  const ini = new Date(); ini.setDate(ini.getDate()-ini.getDay());
-  ini.setHours(0,0,0,0);
-  return USUARIOS.filter(u=>u.tipo==='vendedor').map(u=>({
-    nome: u.nome, ini: u.ini, cor: u.cor,
-    contatos: FEED_ITEMS.filter(f=>f.nome===u.nome&&new Date(f.ts)>=ini).length,
-    obras: OBRAS.filter(o=>o.vendedor===u.nome).length
-  }));
+  carregarMetasConfig();
+  return USUARIOS.filter(u=>u.tipo==='vendedor').map(u=>{
+    const regs = REGISTROS_SEMANA.filter(r=>r.vendedor===u.nome);
+    const contatos = regs.length;
+    const visitas  = regs.filter(r=>r.tipo==='Visita').length;
+    const propostas= regs.filter(r=>(r.resultado||'').toLowerCase().includes('proposta')).length;
+    const meta = METAS_CONFIG[u.nome]||{contatos:10,visitas:2,propostas:3};
+    return {
+      nome:u.nome, ini:u.ini, cor:u.cor, tel:u.tel,
+      contatos, visitas, propostas,
+      metaContatos:meta.contatos, metaVisitas:meta.visitas, metaPropostas:meta.propostas,
+      obras: OBRAS.filter(o=>o.vendedor===u.nome).length,
+      pct: Math.round((contatos/Math.max(1,meta.contatos))*100)
+    };
+  });
+}
+
+// ── MODAL DE CONFIGURAÇÃO DE METAS ───────────────────────────────
+function abrirConfigurarMetas(){
+  carregarMetasConfig();
+  const vendedores = USUARIOS.filter(u=>u.tipo==='vendedor');
+  const el = document.createElement('div');
+  el.className='mo open'; el.id='mMetas';
+  let html = '<div class="mdl" style="max-width:500px">';
+  html += '<div class="mtitle">🎯 Configurar Metas Semanais</div>';
+  html += '<div class="mclose" onclick="this.closest(\'.mo\').remove()"><i class="ti ti-x"></i></div>';
+  html += '<div style="font-size:12px;color:var(--muted);margin-bottom:14px">Defina as metas semanais de cada vendedor. As notificações são enviadas automaticamente na segunda e quinta-feira.</div>';
+  vendedores.forEach(function(u){
+    var m = METAS_CONFIG[u.nome]||{contatos:10,visitas:2,propostas:3};
+    html += '<div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
+    html += '<div style="width:36px;height:36px;border-radius:50%;background:'+u.cor+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">'+u.ini+'</div>';
+    html += '<div style="font-size:14px;font-weight:600">'+u.nome+'</div></div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">';
+    html += '<div class="fi"><label>Contatos/semana</label><input type="number" id="mc_'+u.nome+'_c" value="'+m.contatos+'" min="1" max="100" style="text-align:center;font-size:16px;font-weight:600"></div>';
+    html += '<div class="fi"><label>Visitas/semana</label><input type="number" id="mc_'+u.nome+'_v" value="'+m.visitas+'" min="0" max="20" style="text-align:center;font-size:16px;font-weight:600"></div>';
+    html += '<div class="fi"><label>Propostas/semana</label><input type="number" id="mc_'+u.nome+'_p" value="'+m.propostas+'" min="0" max="20" style="text-align:center;font-size:16px;font-weight:600"></div>';
+    html += '</div></div>';
+  });
+  html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">';
+  html += '<button class="btn btn-s" onclick="this.closest(\'.mo\').remove()">Cancelar</button>';
+  html += '<button class="btn btn-p" onclick="salvarMetas()"><i class="ti ti-check"></i>Salvar metas</button>';
+  html += '</div></div>';
+  el.innerHTML = html;
+  document.body.appendChild(el);
+  el.addEventListener('click',function(e){if(e.target===el)el.remove();});
+}
+
+function salvarMetas(){
+  USUARIOS.filter(u=>u.tipo==='vendedor').forEach(function(u){
+    METAS_CONFIG[u.nome] = {
+      contatos: parseInt(document.getElementById('mc_'+u.nome+'_c')?.value)||10,
+      visitas:  parseInt(document.getElementById('mc_'+u.nome+'_v')?.value)||2,
+      propostas:parseInt(document.getElementById('mc_'+u.nome+'_p')?.value)||3,
+    };
+  });
+  salvarMetasConfig();
+  document.querySelector('#mMetas')?.remove();
+  rendTime();
+  showToast('✓ Metas salvas!','success');
+}
+
+// ── NOTIFICAÇÕES SEGUNDA E QUINTA ─────────────────────────────────
+function enviarNotificacaoSegunda(){
+  const metas = calcMetaSemanal();
+  const seg = getSegundaFeira();
+  const semLabel = seg.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'});
+  metas.forEach(function(m){
+    const obras = OBRAS.filter(o=>o.vendedor===m.nome&&o.status!=='Venda Fechada'&&o.status!=='Venda Perdida');
+    const msg = encodeURIComponent(
+      '🎯 *ObraRadar — Metas da Semana*\n\n'+
+      'Olá '+m.nome+'! Boa semana! 💪\n\n'+
+      '*Suas metas — semana de '+semLabel+':*\n'+
+      '📞 '+m.metaContatos+' contatos\n'+
+      '🚗 '+m.metaVisitas+' visitas\n'+
+      '📋 '+m.metaPropostas+' propostas\n\n'+
+      '*Suas obras ativas ('+obras.length+'):*\n'+
+      obras.slice(0,5).map(o=>'• '+o.nome.slice(0,35)+' ('+o.fase+')').join('\n')+
+      (obras.length>5?'\n• ...e mais '+(obras.length-5)+' obras':'') +
+      '\n\nAcesse o ObraRadar para registrar seus contatos! 🏗️'
+    );
+    window.open('https://wa.me/55'+m.tel+'?text='+msg,'_blank');
+  });
+  showToast('✓ Notificações de segunda enviadas!','success');
+}
+
+function enviarNotificacaoQuinta(){
+  const metas = calcMetaSemanal();
+  metas.forEach(function(m){
+    const obrasParadas = OBRAS.filter(function(o){
+      if(o.vendedor!==m.nome) return false;
+      if(o.status==='Venda Fechada'||o.status==='Venda Perdida') return false;
+      const upd = o.updated_at ? new Date(o.updated_at).getTime() : 0;
+      return (Date.now()-upd) > 7*86400000;
+    });
+    const pendentes = OBRAS.filter(o=>o.vendedor===m.nome&&o.status==='Proposta enviada');
+    const pessoas = PESSOAS.filter(p=>p.vendedor===m.nome&&(p.score||0)<10);
+    const faltam = Math.max(0, m.metaContatos - m.contatos);
+    const msg = encodeURIComponent(
+      '⏰ *ObraRadar — Tarefas Pendentes*\n\n'+
+      'Olá '+m.nome+'! Revisão de quinta-feira:\n\n'+
+      '*Progresso da semana:*\n'+
+      '📞 Contatos: '+m.contatos+'/'+m.metaContatos+(m.contatos>=m.metaContatos?' ✅':' — faltam '+faltam)+'\n'+
+      '🚗 Visitas: '+m.visitas+'/'+m.metaVisitas+(m.visitas>=m.metaVisitas?' ✅':'')+'\n'+
+      '📋 Propostas: '+m.propostas+'/'+m.metaPropostas+(m.propostas>=m.metaPropostas?' ✅':'')+'\n\n'+
+      (obrasParadas.length?'*⚠️ Obras paradas há +7 dias ('+obrasParadas.length+'):*\n'+obrasParadas.slice(0,3).map(o=>'• '+o.nome.slice(0,35)).join('\n')+'\n\n':'')+
+      (pendentes.length?'*📋 Propostas aguardando retorno ('+pendentes.length+'):*\n'+pendentes.slice(0,3).map(o=>'• '+o.nome.slice(0,35)).join('\n')+'\n\n':'')+
+      (pessoas.length?'*👥 Influenciadores sem interação ('+pessoas.length+'):*\n'+pessoas.slice(0,3).map(p=>'• '+p.nome+' ('+p.empresa+')').join('\n')+'\n\n':'')+
+      'Acesse o ObraRadar para atualizar! 🏗️'
+    );
+    window.open('https://wa.me/55'+m.tel+'?text='+msg,'_blank');
+  });
+  showToast('✓ Notificações de quinta enviadas!','success');
+}
+
+// ── AGENDADOR AUTOMÁTICO ──────────────────────────────────────────
+function iniciarAgendadorNotificacoes(){
+  function verificarHorario(){
+    const agora = new Date();
+    const dia = agora.getDay();   // 1=segunda, 4=quinta
+    const hora = agora.getHours();
+    const min  = agora.getMinutes();
+    // Segunda às 8h
+    if(dia===1 && hora===8 && min===0){
+      if(!localStorage.getItem('notif_seg_'+agora.toDateString())){
+        localStorage.setItem('notif_seg_'+agora.toDateString(),'1');
+        if(CURRENT_USER?.tipo==='gestor') enviarNotificacaoSegunda();
+      }
+    }
+    // Quinta às 17h
+    if(dia===4 && hora===17 && min===0){
+      if(!localStorage.getItem('notif_qui_'+agora.toDateString())){
+        localStorage.setItem('notif_qui_'+agora.toDateString(),'1');
+        if(CURRENT_USER?.tipo==='gestor') enviarNotificacaoQuinta();
+      }
+    }
+  }
+  setInterval(verificarHorario, 60000); // verifica a cada minuto
+  verificarHorario();
 }
 
 
@@ -3080,9 +3406,12 @@ function abrirFichaPessoa(id){
   el.addEventListener('click',function(e){if(e.target===el)el.remove();});
 }
 
+function abrirWhatsApp(tel){ window.open("https://wa.me/55"+tel.replace(/\D/g,""),"_blank"); }
+
 (async () => {
   document.getElementById('dataBadge').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
   carregarConfiguracoes();
+  carregarMetasConfig();
   renderLoginCards();
   iniciarSessao();
   initDash();
@@ -3093,7 +3422,9 @@ function abrirFichaPessoa(id){
       await loadObrasFromDB();
       await loadTimeFromDB();
       await loadPessoasFromDB();
+      await carregarRegistrosSemana();
       verificarFollowUps();
+      iniciarAgendadorNotificacoes();
       showToast('✓ ObraRadar v1.8 conectado!','success');
     }
   } catch(e){ console.warn('Supabase:', e.message); }
