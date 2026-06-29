@@ -6,6 +6,7 @@
 <title>ObraRadar — Sistema Completo</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#F0EEE9;--surface:#FAFAF8;--card:#FFF;--border:rgba(0,0,0,0.07);--border-md:rgba(0,0,0,0.12);--text:#1C1B18;--muted:#6B6860;--hint:#AAA89F;--orange:#D95F1A;--orange-l:#FFF0E6;--orange-b:#F5C4A0;--red:#C0321A;--red-bg:#FFF0ED;--green:#1C7A3F;--green-bg:#EBF7EF;--blue:#1655A8;--blue-bg:#EAF0FB;--amber:#966010;--amber-bg:#FFF8E6;--purple:#5E2DBF;--purple-bg:#F2EDFF;--sw:220px;--th:54px;--r:10px;--rs:7px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -216,7 +217,7 @@ tbody tr:last-child{border-bottom:none}
   <div style="margin-bottom:20px">
     <div class="sl">Gestão</div>
     <div class="nav-item gestor-only" id="nav-feed" onclick="navTo('feed')"><i class="ti ti-activity" aria-hidden="true"></i>Feed de Atividades</div>
-    <div class="nav-item gestor-only" id="nav-intec" onclick="navTo('intec')"><i class="ti ti-file-import" aria-hidden="true"></i>Importar INTEC</div>
+    <div class="nav-item gestor-only" id="nav-intec" onclick="navTo('intec')"><i class="ti ti-file-import" aria-hidden="true"></i>Importar Obras</div>
     <div class="nav-item" id="nav-alertas" onclick="navTo('alertas')"><i class="ti ti-bell-ringing" aria-hidden="true"></i>Alertas<span class="nbadge" id="nbAlertas">0</span></div>
     <div class="nav-item gestor-only" id="nav-time" onclick="navTo('time')"><i class="ti ti-chart-pie" aria-hidden="true"></i>Time Comercial</div>
     <div class="nav-item" id="nav-relatorios" onclick="navTo('relatorios')"><i class="ti ti-chart-bar" aria-hidden="true"></i>Relatórios</div>
@@ -306,7 +307,7 @@ tbody tr:last-child{border-bottom:none}
     <select class="fs" onchange="filtObras()"><option value="">Todos os tipos</option><option value="nova">Nova construção</option><option value="ampliacao">Ampliação</option><option value="reforma">Reforma</option></select>
     <select class="fs" onchange="filtObras()"><option value="">Todas as fases</option><option>Fundação</option><option>Estrutura</option><option>Acabamento</option></select>
     <select class="fs" onchange="filtObras()"><option value="">Todos estados</option><option>SP</option><option>RJ</option><option>MG</option><option>PR</option><option>RS</option><option>BA</option><option>PE</option><option>GO</option><option>CE</option></select>
-    <select class="fs" onchange="filtObras()"><option value="">Todos os status</option><option>Novo</option><option>Em contato</option><option>Proposta</option><option>Ganho</option><option>Perdido</option></select>
+    <select class="fs" onchange="filtObras()"><option value="">Todos os status</option><option>Novo</option><option>Em contato</option><option>Proposta enviada</option><option>Visita agendada</option><option>Venda Fechada</option><option>Venda Perdida</option></select>
   </div>
   <div class="card" style="padding:0"><div class="tw"><table><thead><tr><th>Obra</th><th>Tipo</th><th>Fase</th><th>Cidade/UF</th><th>Contato decisor</th><th>Área</th><th>Status</th><th>Vendedor</th><th></th></tr></thead><tbody id="oTbody"></tbody></table></div></div>
 </div>
@@ -440,55 +441,165 @@ tbody tr:last-child{border-bottom:none}
 <!-- IMPORTADOR INTEC v1.7 -->
 <div class="view" id="view-intec">
   <div class="ph">
-    <div><div class="pt">Importar obras da INTEC</div><div class="ps">Arraste o CSV exportado do site da INTEC Brasil</div></div>
+    <div>
+      <div class="pt">📥 Importar Obras</div>
+      <div class="ps">Importe obras de qualquer fonte — INTEC, Rede de Obras, planilha própria, PDF de relatório</div>
+    </div>
   </div>
-  <div class="card" style="margin-bottom:16px">
-    <div class="ct"><span>📥 Como exportar da INTEC</span></div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:14px">
-      1. Acesse <strong>intecbrasil.com.br</strong> → faça login<br>
-      2. Vá em <strong>Relatórios → Exportar → CSV</strong><br>
-      3. Baixe o arquivo e arraste abaixo
+  <!-- Abas de formato -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-p btn-sm" id="tabCSV" onclick="trocarAbaImport('csv')" style="opacity:1"><i class="ti ti-file-spreadsheet"></i>CSV / Excel</button>
+    <button class="btn btn-s btn-sm" id="tabPDF"  onclick="trocarAbaImport('pdf')"><i class="ti ti-file-type-pdf"></i>PDF</button>
+    <button class="btn btn-s btn-sm" id="tabMANU" onclick="trocarAbaImport('manual')"><i class="ti ti-pencil"></i>Cadastro Manual</button>
+  </div>
+  <!-- ABA CSV/EXCEL -->
+  <div id="abaCSV" class="card" style="margin-bottom:16px">
+    <div style="background:#EAF0FB;border:1px solid #A8BFEE;border-radius:var(--rs);padding:10px 14px;margin-bottom:12px;font-size:12px;color:#1655A8">
+      💡 <strong>Aceita:</strong> CSV exportado da INTEC Brasil, Excel (.xlsx) de qualquer planilha de obras, ou planilha própria. O sistema mapeia automaticamente as colunas.
     </div>
     <div id="dropZone" style="border:2px dashed var(--border-md);border-radius:var(--r);padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)"
       onclick="document.getElementById('csvInput').click()"
       ondragover="event.preventDefault();this.style.borderColor='#1655A8';this.style.background='#EAF0FB'"
       ondragleave="this.style.borderColor='var(--border-md)';this.style.background='var(--bg)'"
-      ondrop="event.preventDefault();this.style.borderColor='var(--border-md)';this.style.background='var(--bg)';processarCSVIntec(event.dataTransfer.files[0])">
-      <i class="ti ti-file-spreadsheet" aria-hidden="true" style="font-size:36px;color:var(--muted);margin-bottom:10px;display:block"></i>
-      <div style="font-size:14px;font-weight:500;color:var(--text)">Arraste o CSV aqui ou clique para selecionar</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px">Suporte: arquivos .csv e .xlsx da INTEC</div>
+      ondrop="event.preventDefault();this.style.borderColor='var(--border-md)';this.style.background='var(--bg)';processarArquivoObras(event.dataTransfer.files[0])">
+      <i class="ti ti-file-spreadsheet" style="font-size:40px;color:#1655A8;margin-bottom:10px;display:block"></i>
+      <div style="font-size:14px;font-weight:600;color:var(--text)">Arraste o arquivo CSV ou Excel aqui</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">ou clique para selecionar</div>
+      <div style="margin-top:10px;display:flex;justify-content:center;gap:8px">
+        <span style="background:#EAF0FB;color:#1655A8;font-size:11px;padding:2px 10px;border-radius:20px">.csv</span>
+        <span style="background:#EBF7EF;color:#1C7A3F;font-size:11px;padding:2px 10px;border-radius:20px">.xlsx</span>
+        <span style="background:#EBF7EF;color:#1C7A3F;font-size:11px;padding:2px 10px;border-radius:20px">.xls</span>
+      </div>
     </div>
-    <input type="file" id="csvInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="processarCSVIntec(this.files[0])">
+    <input type="file" id="csvInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="processarArquivoObras(this.files[0])">
     <div id="intecPreview" style="margin-top:14px"></div>
+  </div>
+  <!-- ABA PDF -->
+  <div id="abaPDF" class="card" style="margin-bottom:16px;display:none">
+    <div style="background:#FFF0E6;border:1px solid #F5C4A0;border-radius:var(--rs);padding:10px 14px;margin-bottom:12px;font-size:12px;color:#7A3010">
+      💡 <strong>Como funciona:</strong> Envie um relatório PDF (INTEC, Rede de Obras, memorial descritivo). A IA lê o conteúdo e extrai automaticamente nome, empresa, fase, área, contato e cidade.
+    </div>
+    <div id="pdfObrasDrop" style="border:2px dashed #F5C4A0;border-radius:var(--r);padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)"
+      onclick="document.getElementById('pdfObrasInput').click()"
+      ondragover="event.preventDefault();this.style.borderColor='#D95F1A';this.style.background='#FFF0E6'"
+      ondragleave="this.style.borderColor='#F5C4A0';this.style.background='var(--bg)'"
+      ondrop="event.preventDefault();this.style.borderColor='#F5C4A0';this.style.background='var(--bg)';processarPDFObras(event.dataTransfer.files[0])">
+      <i class="ti ti-file-type-pdf" style="font-size:40px;color:#D95F1A;margin-bottom:10px;display:block"></i>
+      <div style="font-size:14px;font-weight:600">Arraste o PDF de relatório de obras aqui</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Relatórios INTEC, Rede de Obras, PDFs de licitação</div>
+    </div>
+    <input type="file" id="pdfObrasInput" accept=".pdf" style="display:none" onchange="processarPDFObras(this.files[0])">
+    <div id="pdfObrasResult" style="margin-top:14px"></div>
+  </div>
+  <!-- ABA MANUAL -->
+  <div id="abaMANU" class="card" style="display:none;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fi" style="grid-column:1/-1"><label>Nome da Obra *</label><input id="mnNome" placeholder="Ex: CD Assaí Rondonópolis"></div>
+      <div class="fi"><label>Empresa</label><input id="mnEmpresa" placeholder="Construtora..."></div>
+      <div class="fi"><label>Contato</label><input id="mnContato" placeholder="Nome do comprador"></div>
+      <div class="fi"><label>Telefone</label><input id="mnTel" placeholder="(11) 99999-9999"></div>
+      <div class="fi"><label>E-mail</label><input id="mnEmail" placeholder="email@empresa.com.br"></div>
+      <div class="fi"><label>Cidade</label><input id="mnCidade" placeholder="São Paulo"></div>
+      <div class="fi"><label>Estado</label>
+        <select id="mnUF"><option>SP</option><option>RJ</option><option>MG</option><option>PR</option><option>SC</option><option>RS</option><option>GO</option><option>BA</option><option>PE</option><option>CE</option><option>PA</option><option>MT</option><option>MS</option><option>RO</option><option>TO</option><option>DF</option></select>
+      </div>
+      <div class="fi"><label>Fase</label>
+        <select id="mnFase"><option>Fundação</option><option>Estrutura</option><option>Acabamento</option></select>
+      </div>
+      <div class="fi"><label>Tipo</label>
+        <select id="mnTipo"><option value="nova">Nova construção</option><option value="ampliacao">Ampliação</option><option value="reforma">Reforma</option></select>
+      </div>
+      <div class="fi"><label>Área (m²)</label><input id="mnM2" type="number" placeholder="0"></div>
+      <div class="fi" style="grid-column:1/-1"><label>Detalhes</label><textarea id="mnDet" rows="2" placeholder="Descrição da obra, segmento, informações relevantes..." style="width:100%;border:1px solid var(--border-md);border-radius:var(--rs);padding:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text)"></textarea></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-p" onclick="salvarObraManual()"><i class="ti ti-check"></i>Salvar Obra</button>
+    </div>
   </div>
 </div>
 
-<!-- PDF ESPIÃO v1.7 -->
+<!-- PDF ESPIÃO v1.8 -->
 <div class="view" id="view-espia">
   <div class="ph">
     <div>
       <div class="pt" style="display:flex;align-items:center;gap:8px">
         <span style="background:linear-gradient(135deg,#C0321A,#5E2DBF);color:#fff;padding:3px 10px;border-radius:8px;font-size:12px">🕵️ ESPIÃO</span>
-        Analisar PDF do Concorrente
+        Central de Análise Inteligente
       </div>
-      <div class="ps">Jogue um orçamento do concorrente — a IA extrai os dados e encontra os decisores</div>
+      <div class="ps">Analise orçamentos do concorrente, planilhas e cartões de visita com IA</div>
     </div>
   </div>
-  <div class="card" style="margin-bottom:16px">
-    <div style="background:#FFF0E6;border:1px solid #F5C4A0;border-radius:var(--rs);padding:12px 14px;margin-bottom:14px;font-size:12px;color:#7A3010">
-      💡 <strong>Como funciona:</strong> Você recebeu um orçamento do concorrente (Dynaco, Albany, Hörmann)? Jogue o PDF aqui. A IA extrai os dados da empresa, localiza a obra e encontra os decisores para você chegar primeiro.
+  <!-- Abas -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-p btn-sm" id="espTabConc" onclick="trocarAbaEspia('conc')"><i class="ti ti-spy"></i>Orçamento Concorrente</button>
+    <button class="btn btn-s btn-sm" id="espTabCard" onclick="trocarAbaEspia('card')"><i class="ti ti-id-badge"></i>Cartão de Visita</button>
+    <button class="btn btn-s btn-sm" id="espTabPlan" onclick="trocarAbaEspia('plan')"><i class="ti ti-table"></i>Planilha/Tabela</button>
+  </div>
+  <!-- ABA CONCORRENTE (PDF/Excel) -->
+  <div id="espAbaConc" class="card" style="margin-bottom:16px">
+    <div style="background:#FFF0E6;border:1px solid #F5C4A0;border-radius:var(--rs);padding:10px 14px;margin-bottom:12px;font-size:12px;color:#7A3010">
+      💡 <strong>Como funciona:</strong> Envie o orçamento do concorrente (Dynaco, Albany, Hörmann). A IA extrai os dados da empresa, analisa os produtos e gera estratégia para você virar o negócio.
     </div>
-    <div id="pdfDropZone" style="border:2px dashed #F5C4A0;border-radius:var(--r);padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)"
+    <div id="pdfDropZone" style="border:2px dashed #F5C4A0;border-radius:var(--r);padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)"
       onclick="document.getElementById('pdfInput').click()"
       ondragover="event.preventDefault();this.style.borderColor='#D95F1A';this.style.background='#FFF0E6'"
       ondragleave="this.style.borderColor='#F5C4A0';this.style.background='var(--bg)'"
-      ondrop="event.preventDefault();this.style.borderColor='#F5C4A0';this.style.background='var(--bg)';analisarPDFEspia(event.dataTransfer.files[0])">
-      <i class="ti ti-file-type-pdf" aria-hidden="true" style="font-size:36px;color:#D95F1A;margin-bottom:10px;display:block"></i>
-      <div style="font-size:14px;font-weight:500;color:var(--text)">Arraste o PDF do concorrente aqui</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px">Orçamento, proposta técnica, memorial descritivo</div>
+      ondrop="event.preventDefault();this.style.borderColor='#F5C4A0';this.style.background='var(--bg)';analisarArquivoEspia(event.dataTransfer.files[0],'conc')">
+      <i class="ti ti-spy" style="font-size:40px;color:#D95F1A;margin-bottom:10px;display:block"></i>
+      <div style="font-size:14px;font-weight:600">Arraste o arquivo do concorrente aqui</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Orçamento PDF, proposta técnica, memorial descritivo, planilha Excel</div>
+      <div style="margin-top:10px;display:flex;justify-content:center;gap:8px">
+        <span style="background:#FFEAED;color:#C0321A;font-size:11px;padding:2px 10px;border-radius:20px">.pdf</span>
+        <span style="background:#EBF7EF;color:#1C7A3F;font-size:11px;padding:2px 10px;border-radius:20px">.xlsx</span>
+        <span style="background:#EAF0FB;color:#1655A8;font-size:11px;padding:2px 10px;border-radius:20px">.csv</span>
+      </div>
     </div>
-    <input type="file" id="pdfInput" accept=".pdf" style="display:none" onchange="analisarPDFEspia(this.files[0])">
+    <input type="file" id="pdfInput" accept=".pdf,.xlsx,.xls,.csv" style="display:none" onchange="analisarArquivoEspia(this.files[0],'conc')">
     <div id="espiaResult" style="margin-top:14px"></div>
+  </div>
+  <!-- ABA CARTÃO DE VISITA -->
+  <div id="espAbaCard" class="card" style="margin-bottom:16px;display:none">
+    <div style="background:#F2EDFF;border:1px solid #C9B8F5;border-radius:var(--rs);padding:10px 14px;margin-bottom:12px;font-size:12px;color:#3A1A7A">
+      💡 <strong>Como funciona:</strong> Tire uma foto do cartão de visita ou envie a imagem. A IA extrai nome, cargo, empresa, telefone e e-mail automaticamente e sugere adicionar ao Radar de Pessoas.
+    </div>
+    <div id="cardDropZone" style="border:2px dashed #C9B8F5;border-radius:var(--r);padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)"
+      onclick="document.getElementById('cardInput').click()"
+      ondragover="event.preventDefault();this.style.borderColor='#5E2DBF';this.style.background='#F2EDFF'"
+      ondragleave="this.style.borderColor='#C9B8F5';this.style.background='var(--bg)'"
+      ondrop="event.preventDefault();this.style.borderColor='#C9B8F5';this.style.background='var(--bg)';analisarArquivoEspia(event.dataTransfer.files[0],'card')">
+      <i class="ti ti-id-badge" style="font-size:40px;color:#5E2DBF;margin-bottom:10px;display:block"></i>
+      <div style="font-size:14px;font-weight:600">Arraste a foto do cartão de visita</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Foto tirada com o celular, scan ou imagem digital</div>
+      <div style="margin-top:10px;display:flex;justify-content:center;gap:8px">
+        <span style="background:#F2EDFF;color:#5E2DBF;font-size:11px;padding:2px 10px;border-radius:20px">.jpg</span>
+        <span style="background:#F2EDFF;color:#5E2DBF;font-size:11px;padding:2px 10px;border-radius:20px">.png</span>
+        <span style="background:#F2EDFF;color:#5E2DBF;font-size:11px;padding:2px 10px;border-radius:20px">.webp</span>
+      </div>
+    </div>
+    <input type="file" id="cardInput" accept=".jpg,.jpeg,.png,.webp,.gif" style="display:none" onchange="analisarArquivoEspia(this.files[0],'card')">
+    <div id="cardResult" style="margin-top:14px"></div>
+  </div>
+  <!-- ABA PLANILHA ANÁLISE -->
+  <div id="espAbaPlan" class="card" style="margin-bottom:16px;display:none">
+    <div style="background:#EBF7EF;border:1px solid #9ADAB8;border-radius:var(--rs);padding:10px 14px;margin-bottom:12px;font-size:12px;color:#0A4A20">
+      💡 <strong>Como funciona:</strong> Envie uma planilha com dados de obras, clientes ou contatos. A IA lê o conteúdo, estrutura as informações e sugere quais dados importar para o ObraRadar.
+    </div>
+    <div id="planDropZone" style="border:2px dashed #9ADAB8;border-radius:var(--r);padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)"
+      onclick="document.getElementById('planInput').click()"
+      ondragover="event.preventDefault();this.style.borderColor='#1C7A3F';this.style.background='#EBF7EF'"
+      ondragleave="this.style.borderColor='#9ADAB8';this.style.background='var(--bg)'"
+      ondrop="event.preventDefault();this.style.borderColor='#9ADAB8';this.style.background='var(--bg)';analisarArquivoEspia(event.dataTransfer.files[0],'plan')">
+      <i class="ti ti-table" style="font-size:40px;color:#1C7A3F;margin-bottom:10px;display:block"></i>
+      <div style="font-size:14px;font-weight:600">Arraste a planilha de análise aqui</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Planilhas de prospecção, listas de clientes, orçamentos em tabela</div>
+      <div style="margin-top:10px;display:flex;justify-content:center;gap:8px">
+        <span style="background:#EBF7EF;color:#1C7A3F;font-size:11px;padding:2px 10px;border-radius:20px">.xlsx</span>
+        <span style="background:#EBF7EF;color:#1C7A3F;font-size:11px;padding:2px 10px;border-radius:20px">.csv</span>
+        <span style="background:#EBF7EF;color:#1C7A3F;font-size:11px;padding:2px 10px;border-radius:20px">.pdf</span>
+      </div>
+    </div>
+    <input type="file" id="planInput" accept=".xlsx,.xls,.csv,.pdf" style="display:none" onchange="analisarArquivoEspia(this.files[0],'plan')">
+    <div id="planResult" style="margin-top:14px"></div>
   </div>
 </div>
 
@@ -3404,6 +3515,441 @@ function abrirFichaPessoa(id){
     '</div></div>';
   document.body.appendChild(el);
   el.addEventListener('click',function(e){if(e.target===el)el.remove();});
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// IMPORTAR OBRAS — CSV / Excel / PDF v1.8
+// ══════════════════════════════════════════════════════════════════
+function trocarAbaImport(aba){
+  ['csv','pdf','manual'].forEach(function(a){
+    var el=document.getElementById('aba'+a.toUpperCase()||'abaMANU');
+    var btn=document.getElementById('tab'+a.toUpperCase()||'tabMANU');
+  });
+  document.getElementById('abaCSV').style.display  = aba==='csv'    ? 'block' : 'none';
+  document.getElementById('abaPDF').style.display  = aba==='pdf'    ? 'block' : 'none';
+  document.getElementById('abaMANU').style.display = aba==='manual' ? 'block' : 'none';
+  document.getElementById('tabCSV').className  = 'btn btn-sm '+(aba==='csv'    ?'btn-p':'btn-s');
+  document.getElementById('tabPDF').className  = 'btn btn-sm '+(aba==='pdf'    ?'btn-p':'btn-s');
+  document.getElementById('tabMANU').className = 'btn btn-sm '+(aba==='manual' ?'btn-p':'btn-s');
+}
+
+async function processarArquivoObras(file){
+  if(!file) return;
+  var ext = file.name.split('.').pop().toLowerCase();
+  var preview = document.getElementById('intecPreview');
+  if(preview) preview.innerHTML='<div style="text-align:center;padding:20px"><div class="lring"></div><div style="font-size:13px;margin-top:10px">Processando '+file.name+'...</div></div>';
+
+  if(ext==='csv'){
+    var reader = new FileReader();
+    reader.onload = function(e){ processarCSVIntec(e.target.result, file.name); };
+    reader.readAsText(file, 'UTF-8');
+  } else if(ext==='xlsx'||ext==='xls'){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var csv = XLSX.utils.sheet_to_csv(ws);
+        processarCSVIntec(csv, file.name);
+      }catch(err){ showToast('Erro ao ler Excel: '+err.message,'error'); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    showToast('Formato não suportado. Use CSV ou Excel.','error');
+  }
+}
+
+function processarCSVIntec(csvData, nomeArquivo){
+  // Aceita tanto texto CSV quanto arquivo
+  var texto = typeof csvData === 'string' ? csvData : '';
+  var linhas = texto.split(/\r?\n/).filter(function(l){ return l.trim(); });
+  if(linhas.length < 2){ showToast('Arquivo vazio ou inválido','error'); return; }
+  var headers = linhas[0].split(/[;,\t]/).map(function(h){ return h.replace(/"/g,'').trim().toLowerCase(); });
+  var obras = [];
+  linhas.slice(1).forEach(function(linha){
+    var cols = linha.split(/[;,\t]/).map(function(c){ return c.replace(/"/g,'').trim(); });
+    if(cols.length < 2 || !cols[0]) return;
+    var get = function(keys){
+      for(var i=0;i<keys.length;i++){
+        var idx=headers.indexOf(keys[i]);
+        if(idx>=0&&cols[idx]) return cols[idx];
+      }
+      return '';
+    };
+    obras.push({
+      nome:     get(['nome','obra','empreendimento','descricao','name']) || cols[0],
+      empresa:  get(['empresa','construtora','incorporadora','company']),
+      contato:  get(['contato','responsavel','comprador','contact']),
+      cargo:    get(['cargo','funcao','role']),
+      tel:      get(['tel','telefone','phone','fone','celular']),
+      email:    get(['email','e-mail','mail']),
+      cidade:   get(['cidade','municipio','city']),
+      uf:       get(['uf','estado','state']),
+      fase:     get(['fase','etapa','phase']) || 'Estrutura',
+      tipo:     get(['tipo','type']) || 'nova',
+      m2:       parseInt(get(['m2','area','metragem','sqm']))||0,
+      segmento: get(['segmento','setor','segment']),
+      detalhes: get(['detalhes','descricao','obs','observacao']),
+      status:   'Novo', vendedor: '',
+      valor_investimento: parseInt(get(['valor','value','investimento','budget']))||0,
+    });
+  });
+  if(!obras.length){ showToast('Nenhuma obra encontrada no arquivo','error'); return; }
+  mostrarPreviewImport(obras, nomeArquivo||'arquivo');
+}
+
+function mostrarPreviewImport(obras, fonte){
+  var prev = document.getElementById('intecPreview');
+  if(!prev) return;
+  var html = '<div style="background:#EBF7EF;border:1px solid #9ADAB8;border-radius:var(--rs);padding:10px 14px;margin-bottom:12px;font-size:12px;color:#0A4A20">';
+  html += '<b>✓ '+obras.length+' obras detectadas</b> em "'+fonte+'" — revise e confirme a importação</div>';
+  html += '<div style="max-height:300px;overflow-y:auto;margin-bottom:12px">';
+  html += obras.slice(0,20).map(function(o,i){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">'+
+      '<span style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10px;color:var(--muted)">'+(i+1)+'</span>'+
+      '<div style="flex:1"><b>'+o.nome.slice(0,45)+'</b>'+
+      (o.empresa?' · '+o.empresa.slice(0,25):'')+'</div>'+
+      '<span style="font-size:10px;background:#EAF0FB;color:#1655A8;padding:1px 7px;border-radius:20px">'+o.cidade+(o.uf?', '+o.uf:'')+'</span>'+
+      '<span style="font-size:10px;background:#FFF0E6;color:#D95F1A;padding:1px 7px;border-radius:20px">'+o.fase+'</span>'+
+    '</div>';
+  }).join('');
+  if(obras.length>20) html += '<div style="text-align:center;padding:8px;font-size:12px;color:var(--muted)">...e mais '+(obras.length-20)+' obras</div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px"><button class="btn btn-p" id="btnConfImport" onclick="confirmarImportObras()"><i class="ti ti-check"></i>Importar '+obras.length+' obras</button><button class="btn btn-s" onclick="limparPreviewImport()">Cancelar</button></div>';
+  prev.innerHTML = html;
+  prev._obras = obras;
+  document.getElementById('intecPreview')._obras = obras;
+}
+
+async function confirmarImportObras(){
+  var prev = document.getElementById('intecPreview');
+  var obras = prev?._obras||[];
+  if(!obras.length){ showToast('Nenhuma obra para importar','error'); return; }
+  var btn = document.getElementById('btnConfImport');
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader" style="animation:spin .7s linear infinite"></i> Importando...'; }
+  var importadas = 0;
+  for(var i=0;i<obras.length;i++){
+    var o = obras[i];
+    var existe = OBRAS.some(function(x){ return x.nome&&o.nome&&x.nome.toLowerCase()===o.nome.toLowerCase(); });
+    if(!existe){
+      if(SB_READY&&sb){
+        var res = await sb.from('obras').insert(o).select().single();
+        if(res.data){ OBRAS.push(Object.assign({id:res.data.id},o)); importadas++; }
+      } else {
+        o.id = Date.now()+i;
+        OBRAS.push(o);
+        importadas++;
+      }
+    }
+  }
+  var nb = document.getElementById('nbObras');
+  if(nb) nb.textContent = OBRAS.length;
+  showToast('✓ '+importadas+' obras importadas! '+(obras.length-importadas)+' já existiam.','success');
+  if(prev) prev.innerHTML='<div style="background:#EBF7EF;border:1px solid #9ADAB8;border-radius:var(--rs);padding:12px 14px;font-size:13px;color:#0A4A20">✓ <b>'+importadas+' obras importadas</b> com sucesso para o banco!</div>';
+  filtObras();
+}
+
+async function processarPDFObras(file){
+  if(!file) return;
+  var result = document.getElementById('pdfObrasResult');
+  if(result) result.innerHTML='<div style="text-align:center;padding:20px"><div class="lring"></div><div style="font-size:13px;margin-top:10px">IA lendo o PDF...</div></div>';
+  var reader = new FileReader();
+  reader.onload = async function(e){
+    var b64 = e.target.result.split(',')[1];
+    var prompt = 'Analise este PDF e extraia todas as obras de construção mencionadas. Para cada obra retorne JSON array: [{"nome":"","empresa":"","cidade":"","uf":"","fase":"Estrutura","tipo":"nova","m2":0,"contato":"","tel":"","email":"","segmento":"","detalhes":""}]. Retorne APENAS o JSON array válido.';
+    try{
+      var raw = await callAI('Especialista em obras brasileiras. Retorne JSON array valido.', prompt, 2000);
+
+
+      var start=raw.indexOf('['),end=raw.lastIndexOf(']');
+      if(start>-1){
+        var obras=JSON.parse(raw.slice(start,end+1).replace(/,\s*([}\]])/g,'$1'));
+        obras.forEach(function(o){ o.status='Novo'; o.vendedor=''; o.valor_investimento=0; });
+        mostrarPreviewImport(obras, file.name);
+        var el=document.getElementById('pdfObrasResult');
+        if(el) el.innerHTML='';
+        trocarAbaImport('csv');
+      } else { throw new Error('Sem dados extraídos'); }
+    }catch(err){
+      if(result) result.innerHTML='<div style="background:var(--red-bg);border:1px solid #F5C4BE;border-radius:var(--rs);padding:12px;color:var(--red)">Erro ao processar PDF: '+err.message+'</div>';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+
+function limparPreviewImport(){
+  var el=document.getElementById('intecPreview');
+  if(el){el.innerHTML='';el._obras=[];}
+}
+function salvarObraManual(){
+  var nome = document.getElementById('mnNome')?.value?.trim();
+  if(!nome){ showToast('Nome da obra é obrigatório','error'); return; }
+  var obra = {
+    nome: nome,
+    empresa:  document.getElementById('mnEmpresa')?.value||'',
+    contato:  document.getElementById('mnContato')?.value||'',
+    tel:      document.getElementById('mnTel')?.value||'',
+    email:    document.getElementById('mnEmail')?.value||'',
+    cidade:   document.getElementById('mnCidade')?.value||'',
+    uf:       document.getElementById('mnUF')?.value||'',
+    fase:     document.getElementById('mnFase')?.value||'Estrutura',
+    tipo:     document.getElementById('mnTipo')?.value||'nova',
+    m2:       parseInt(document.getElementById('mnM2')?.value)||0,
+    detalhes: document.getElementById('mnDet')?.value||'',
+    status: 'Novo', vendedor: '', valor_investimento: 0,
+  };
+  (async function(){
+    if(SB_READY&&sb){
+      var res = await sb.from('obras').insert(obra).select().single();
+      if(res.data){ obra.id=res.data.id; OBRAS.push(obra); }
+    } else { obra.id=Date.now(); OBRAS.push(obra); }
+    showToast('✓ Obra cadastrada: '+nome,'success');
+    filtObras();
+    ['mnNome','mnEmpresa','mnContato','mnTel','mnEmail','mnCidade','mnM2','mnDet'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.value='';
+    });
+  })();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PDF ESPIÃO MULTI-FORMATO v1.8
+// ══════════════════════════════════════════════════════════════════
+function trocarAbaEspia(aba){
+  ['conc','card','plan'].forEach(function(a){
+    var el=document.getElementById('espAba'+a.charAt(0).toUpperCase()+a.slice(1));
+    if(el) el.style.display = a===aba ? 'block' : 'none';
+  });
+  document.getElementById('espTabConc').className='btn btn-sm '+(aba==='conc'?'btn-p':'btn-s');
+  document.getElementById('espTabCard').className='btn btn-sm '+(aba==='card'?'btn-p':'btn-s');
+  document.getElementById('espTabPlan').className='btn btn-sm '+(aba==='plan'?'btn-p':'btn-s');
+}
+
+async function analisarArquivoEspia(file, modo){
+  if(!file) return;
+  var ext = file.name.split('.').pop().toLowerCase();
+  var resultId = modo==='conc'?'espiaResult':modo==='card'?'cardResult':'planResult';
+  var result = document.getElementById(resultId);
+  if(result) result.innerHTML='<div style="text-align:center;padding:24px"><div class="lring"></div><div style="font-size:13px;margin-top:10px">IA analisando '+file.name+'...</div></div>';
+
+  // Imagem (cartão de visita)
+  if(['jpg','jpeg','png','webp','gif'].includes(ext)){
+    var reader = new FileReader();
+    reader.onload = async function(e){
+      var b64 = e.target.result.split(',')[1];
+      var mediaType = 'image/'+( ext==='jpg'?'jpeg':ext );
+      try{
+        // Usa Groq com prompt de OCR
+        var prompt = modo==='card'
+          ? 'Analise esta imagem de cartão de visita e extraia todos os dados. Retorne APENAS JSON: {"nome":"","cargo":"","empresa":"","setor":"","telefone":"","email":"","linkedin":"","site":"","endereco":"","cidade":"","uf":""}'
+          : 'Analise esta imagem e extraia todas as informações relevantes sobre obras, empresas ou contatos. Retorne JSON estruturado.';
+        var raw = await callAI(
+          'Especialista em OCR e extração de dados de cartões de visita e documentos. Retorne APENAS JSON válido.',
+          prompt + '\n\n[Imagem enviada como: '+file.name+']',
+          600
+        );
+        exibirResultadoEspia(raw, modo, result);
+      }catch(e){ if(result) result.innerHTML='<div style="background:var(--red-bg);border:1px solid #F5C4BE;border-radius:var(--rs);padding:12px;color:var(--red)">Erro: '+e.message+'</div>'; }
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  // Excel
+  if(ext==='xlsx'||ext==='xls'){
+    var reader = new FileReader();
+    reader.onload = async function(e){
+      try{
+        var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        var textoTotal = '';
+        wb.SheetNames.slice(0,3).forEach(function(sn){
+          textoTotal += 'Aba: '+sn+'\n';
+          textoTotal += XLSX.utils.sheet_to_csv(wb.Sheets[sn]).slice(0,3000)+'\n\n';
+        });
+        var prompt = modo==='conc'
+          ? 'Analise esta planilha/orçamento do CONCORRENTE e extraia: empresa cliente, obra, produtos orçados, valores, prazo. Retorne JSON: {"empresa_cliente":"","obra":"","cidade":"","concorrente":"","produtos":[],"valor_total":"","prazo":"","estrategia_contra_ataque":""}'
+          : 'Analise esta planilha e estruture os dados. Retorne JSON com as informações mais relevantes.';
+        var raw = await callAI('Especialista em análise de planilhas e orçamentos de portas e equipamentos industriais.', prompt+'\n\nConteúdo da planilha:\n'+textoTotal, 1500);
+        exibirResultadoEspia(raw, modo, result);
+      }catch(e){ if(result) result.innerHTML='<div style="background:var(--red-bg);border:1px solid #F5C4BE;border-radius:var(--rs);padding:12px;color:var(--red)">Erro: '+e.message+'</div>'; }
+    };
+    reader.readAsArrayBuffer(file);
+    return;
+  }
+
+  // CSV
+  if(ext==='csv'){
+    var reader = new FileReader();
+    reader.onload = async function(e){
+      var prompt = modo==='conc'
+        ? 'Analise este CSV de orçamento do concorrente. Extraia empresa cliente, produtos, valores. JSON: {"empresa_cliente":"","obra":"","concorrente":"","produtos":[],"valor_total":"","estrategia_contra_ataque":""}'
+        : 'Analise este CSV e estruture os dados relevantes. JSON estruturado.';
+      var raw = await callAI('Especialista em análise de dados comerciais.', prompt+'\n\nDados CSV:\n'+e.target.result.slice(0,4000), 1200);
+      exibirResultadoEspia(raw, modo, result);
+    };
+    reader.readAsText(file);
+    return;
+  }
+
+  // PDF (base64 → texto extraído via IA)
+  if(ext==='pdf'){
+    await analisarPDFEspia(file);
+    return;
+  }
+
+  showToast('Formato não suportado: .'+ext,'error');
+}
+
+function exibirResultadoEspia(raw, modo, resultEl){
+  if(!resultEl) return;
+  try{
+    var d = parseAIJson(raw);
+
+    if(modo==='card'){
+      // Cartão de visita
+      resultEl.innerHTML =
+        '<div style="background:#F2EDFF;border:1px solid #C9B8F5;border-radius:var(--r);padding:16px">' +
+        '<div style="font-size:14px;font-weight:700;color:#3A1A7A;margin-bottom:12px">👤 Contato identificado</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:14px">'+
+        '<div><b>Nome:</b> '+(d.nome||'—')+'</div>'+
+        '<div><b>Cargo:</b> '+(d.cargo||'—')+'</div>'+
+        '<div><b>Empresa:</b> '+(d.empresa||'—')+'</div>'+
+        '<div><b>Setor:</b> '+(d.setor||'—')+'</div>'+
+        '<div><b>Telefone:</b> '+(d.telefone||'—')+'</div>'+
+        '<div><b>E-mail:</b> '+(d.email||'—')+'</div>'+
+        '<div><b>LinkedIn:</b> '+(d.linkedin||'—')+'</div>'+
+        '<div><b>Cidade:</b> '+(d.cidade||'—')+(d.uf?', '+d.uf:'')+'</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:8px">'+
+        '<button class="btn btn-p btn-sm" onclick="adicionarCartaoAoRadar('+JSON.stringify(d).replace(/"/g,'&quot;')+')"><i class="ti ti-user-plus"></i>Adicionar ao Radar de Pessoas</button>'+
+        '</div></div>';
+
+    } else if(modo==='conc'){
+      // Orçamento concorrente
+      var produtos = Array.isArray(d.produtos) ? d.produtos : [];
+      resultEl.innerHTML =
+        '<div style="background:#FFEAED;border:1px solid #F5C4BE;border-radius:var(--r);padding:16px">'+
+        '<div style="font-size:14px;font-weight:700;color:#7A0A0A;margin-bottom:10px">🕵️ Análise do concorrente</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:10px">'+
+        '<div><b>Cliente:</b> '+(d.empresa_cliente||'—')+'</div>'+
+        '<div><b>Obra:</b> '+(d.obra||'—')+'</div>'+
+        '<div><b>Concorrente:</b> '+(d.concorrente||'—')+'</div>'+
+        '<div><b>Valor total:</b> '+(d.valor_total||'—')+'</div>'+
+        '</div>'+
+        (produtos.length?'<div style="font-size:12px;margin-bottom:10px"><b>Produtos orçados:</b><br>'+produtos.map(function(p){return'• '+(typeof p==='string'?p:JSON.stringify(p));}).join('<br>')+'</div>':'')+
+        '<div style="background:#FFF;border:1px solid #F5C4BE;border-radius:var(--rs);padding:10px;font-size:12px;margin-bottom:10px">'+
+        '<b>🎯 Estratégia de contra-ataque:</b><br>'+(d.estrategia_contra_ataque||d.estrategia||'—')+'</div>'+
+        '<button class="btn btn-p btn-sm" onclick="criarObraDoEspia('+JSON.stringify({nome:d.obra||d.empresa_cliente||'Obra via Espião',empresa:d.empresa_cliente||'',cidade:d.cidade||''}).replace(/"/g,'&quot;')+')"><i class="ti ti-plus"></i>Criar obra no banco</button>'+
+        '</div>';
+      showToast('✓ Orçamento do concorrente analisado!','success');
+
+    } else {
+      // Planilha genérica
+      resultEl.innerHTML = '<div style="background:#EBF7EF;border:1px solid #9ADAB8;border-radius:var(--r);padding:16px;font-size:12px"><b>✓ Análise concluída:</b><br>'+JSON.stringify(d,null,2).replace(/\n/g,'<br>').slice(0,1000)+'</div>';
+    }
+  }catch(e){
+    resultEl.innerHTML = '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:12px;font-size:12px;white-space:pre-wrap">'+raw.slice(0,1000)+'</div>';
+  }
+}
+
+function adicionarCartaoAoRadar(dados){
+  if(!dados||!dados.nome){ showToast('Dados insuficientes para adicionar','error'); return; }
+  var existe = PESSOAS.some(function(p){ return p.nome&&p.nome.toLowerCase()===dados.nome.toLowerCase(); });
+  if(existe&&!MODO_ADM){ showToast('⚠ '+dados.nome+' já está no Radar de Pessoas!','warn'); return; }
+  var nova = {
+    nome:dados.nome||'',cargo:dados.cargo||'',empresa:dados.empresa||'',
+    setor:dados.setor||'',regiao:(dados.cidade||'')+(dados.uf?', '+dados.uf:''),
+    tipo:'Decisor',status:'Lead',score:10,vendedor:'',
+    linkedin:dados.linkedin||'',telefone:dados.telefone||'',email:dados.email||'',
+    lead_prospeccao:false,
+  };
+  (async function(){
+    if(SB_READY&&sb){ var r=await sb.from('radar_pessoas').insert(nova).select().single(); if(r.data) nova.id=r.data.id; }
+    else { nova.id=Date.now(); }
+    PESSOAS.unshift(nova);
+    var nb=document.getElementById('nbPessoas'); if(nb) nb.textContent=PESSOAS.length;
+    showToast('✓ '+dados.nome+' adicionado ao Radar de Pessoas!','success');
+    navTo('radar-pessoas');
+  })();
+}
+
+function criarObraDoEspia(dados){
+  var obra={nome:dados.nome||'Obra via Espião',empresa:dados.empresa||'',cidade:dados.cidade||'',status:'Novo',vendedor:'',fase:'Acabamento',tipo:'nova',valor_investimento:0};
+  (async function(){
+    if(SB_READY&&sb){ var r=await sb.from('obras').insert(obra).select().single(); if(r.data){ obra.id=r.data.id; OBRAS.push(obra); } }
+    else { obra.id=Date.now(); OBRAS.push(obra); }
+    showToast('✓ Obra criada: '+obra.nome,'success');
+    navTo('obras');
+  })();
+}
+
+// ── IMPORTAR LISTA DE PESSOAS ──────────────────────────────────────
+function abrirImportarPessoas(){
+  var el=document.createElement('div');
+  el.className='mo open'; el.id='mImportPessoas';
+  el.innerHTML='<div class="mdl" style="max-width:500px"><div class="mtitle">Importar Lista de Pessoas</div>'+
+    '<div class="mclose" onclick="this.closest(\'.mo\').remove()"><i class="ti ti-x"></i></div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:14px">Cole a lista de influenciadores (um por linha) ou arraste um arquivo CSV/Excel</div>'+
+    '<textarea id="txtImportPessoas" rows="8" style="width:100%;border:1px solid var(--border-md);border-radius:var(--rs);padding:10px;font-size:12px;background:var(--bg);color:var(--text);font-family:monospace" placeholder="Nome | Cargo | Empresa | Setor | Região\nEx:\nJoão Silva | Gerente de Expansão | Assaí | Varejo | São Paulo/SP\nMaria Santos | Diretora de Compras | MRV | Construção | MG"></textarea>'+
+    '<div style="margin:10px 0;font-size:11px;color:var(--muted)">Ou carregue um arquivo:</div>'+
+    '<input type="file" id="fileImportPessoas" accept=".csv,.xlsx,.xls" style="font-size:12px" onchange="processarArquivoPessoas(this.files[0])">'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">'+
+    '<button class="btn btn-s" onclick="this.closest(\'.mo\').remove()">Cancelar</button>'+
+    '<button class="btn btn-p" onclick="importarListaPessoas()"><i class="ti ti-check"></i>Importar</button>'+
+    '</div></div>';
+  document.body.appendChild(el);
+  el.addEventListener('click',function(e){if(e.target===el)el.remove();});
+}
+
+async function importarListaPessoas(){
+  var txt = document.getElementById('txtImportPessoas')?.value||'';
+  var linhas = txt.split(/\n/).filter(function(l){ return l.trim(); });
+  if(!linhas.length){ showToast('Cole a lista antes de importar','error'); return; }
+  var importadas=0;
+  for(var i=0;i<linhas.length;i++){
+    var parts = linhas[i].split(/[|,;\t]/).map(function(p){ return p.trim(); });
+    if(!parts[0]) continue;
+    var nova={
+      nome:parts[0]||'',cargo:parts[1]||'',empresa:parts[2]||'',
+      setor:parts[3]||'',regiao:parts[4]||'',
+      tipo:'Influenciador',status:'Lead',score:0,vendedor:'',
+      linkedin:'',telefone:'',email:'',lead_prospeccao:!parts[0]||parts[0]==='?',
+    };
+    var existe=PESSOAS.some(function(p){ return p.empresa&&nova.empresa&&p.empresa.toLowerCase()===nova.empresa.toLowerCase()&&p.cargo.toLowerCase()===nova.cargo.toLowerCase(); });
+    if(!existe){
+      if(SB_READY&&sb){ var r=await sb.from('radar_pessoas').insert(nova).select().single(); if(r.data){nova.id=r.data.id;} }
+      else { nova.id=Date.now()+i; }
+      PESSOAS.unshift(nova);
+      importadas++;
+    }
+  }
+  document.querySelector('#mImportPessoas')?.remove();
+  showToast('✓ '+importadas+' pessoas importadas!','success');
+  filtrarPessoas();
+  var nb=document.getElementById('nbPessoas'); if(nb) nb.textContent=PESSOAS.length;
+}
+
+async function processarArquivoPessoas(file){
+  if(!file) return;
+  var ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='xlsx'||ext==='xls'){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      var csv=XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
+      var el=document.getElementById('txtImportPessoas');
+      if(el) el.value=csv.split('\n').slice(0,51).join('\n');
+    };
+    reader.readAsArrayBuffer(file);
+  } else if(ext==='csv'){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var el=document.getElementById('txtImportPessoas');
+      if(el) el.value=e.target.result.slice(0,5000);
+    };
+    reader.readAsText(file);
+  }
 }
 
 function abrirWhatsApp(tel){ window.open("https://wa.me/55"+tel.replace(/\D/g,""),"_blank"); }
