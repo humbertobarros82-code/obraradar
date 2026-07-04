@@ -175,7 +175,7 @@ tbody tr:last-child{border-bottom:none}
 <div class="topbar">
   <div class="tb-logo">
     <div class="lm"><div class="ld" style="background:#C0321A"></div><div class="ld" style="background:#D95F1A"></div><div class="ld" style="background:#1655A8"></div></div>
-    ObraRadar <span style="font-size:9px;background:#C0321A;color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:700">v1.8</span>
+    ObraRadar <span style="font-size:9px;background:#C0321A;color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:700">v1.8.2</span>
   </div>
   <div class="tb-search"><i class="ti ti-search" aria-hidden="true"></i><input type="text" placeholder="Buscar obra, cidade, empresa..."></div>
   <div class="tb-right">
@@ -191,11 +191,11 @@ tbody tr:last-child{border-bottom:none}
   <div style="width:100%;max-width:400px">
     <div style="text-align:center;margin-bottom:28px">
       <div style="font-family:'Sora',sans-serif;font-size:26px;font-weight:700;color:var(--text)">🏗️ ObraRadar</div>
-      <div style="font-size:12px;background:#C0321A;color:#fff;padding:2px 10px;border-radius:10px;display:inline-block;margin-top:4px">v1.8 · Tecnoportas & Tecnodock</div>
+      <div style="font-size:12px;background:#C0321A;color:#fff;padding:2px 10px;border-radius:10px;display:inline-block;margin-top:4px">v1.8.2 · Tecnoportas & Tecnodock</div>
       <div style="font-size:13px;color:var(--muted);margin-top:8px">Selecione seu perfil e informe sua senha</div>
     </div>
     <div id="loginCards" style="display:flex;flex-direction:column;gap:10px"></div>
-    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--muted)">ObraRadar v1.8 · Tecnoportas & Tecnodock</div>
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--muted)">ObraRadar v1.8.2 · Tecnoportas & Tecnodock</div>
   </div>
 </div>
 
@@ -295,11 +295,11 @@ tbody tr:last-child{border-bottom:none}
 <!-- BANCO DE OBRAS -->
 <div class="view" id="view-obras">
   <div class="ph">
-    <div><div class="pt">Banco de Obras</div><div class="ps">3.847 obras ativas · atualizado hoje às <span id="horaObras"></span></div></div>
+    <div><div class="pt">Banco de Obras</div><div class="ps" id="obrasSub">Obras disponíveis para prospecção</div></div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-s btn-sm"><i class="ti ti-upload" aria-hidden="true"></i>Importar CSV</button>
-      <button class="btn btn-s btn-sm"><i class="ti ti-download" aria-hidden="true"></i>Exportar</button>
-      <button class="btn btn-p btn-sm" onclick="openNovaObra()"><i class="ti ti-plus" aria-hidden="true"></i>Cadastrar obra</button>
+      <button class="btn btn-s btn-sm gestor-only" id="btnMinhasObras" onclick="toggleMinhasObras()"><i class="ti ti-user-star" aria-hidden="true"></i>Minhas Obras</button>
+      <button class="btn btn-s btn-sm gestor-only" onclick="navTo('intec')"><i class="ti ti-upload" aria-hidden="true"></i>Importar</button>
+      <button class="btn btn-p btn-sm gestor-only" onclick="navTo('intec');trocarAbaImport('manual')"><i class="ti ti-plus" aria-hidden="true"></i>Cadastrar obra</button>
     </div>
   </div>
   <div class="fb">
@@ -315,10 +315,10 @@ tbody tr:last-child{border-bottom:none}
 <!-- CRM -->
 <div class="view" id="view-crm">
   <div class="ph">
-    <div><div class="pt">CRM Pipeline</div><div class="ps">Pipeline de vendas por obra · maio 2026</div></div>
+    <div><div class="pt">CRM Pipeline</div><div class="ps" id="crmSub">Pipeline de vendas por obra</div></div>
     <div style="display:flex;gap:8px">
+      <button class="btn btn-s btn-sm gestor-only" id="btnMinhasObrasCRM" onclick="toggleMinhasObras()"><i class="ti ti-user-star" aria-hidden="true"></i>Minhas Obras</button>
       <select class="fs" id="filtroVendedor"><option>Todos os vendedores</option></select>
-      <button class="btn btn-p btn-sm"><i class="ti ti-plus" aria-hidden="true"></i>Nova oportunidade</button>
     </div>
   </div>
   <div class="kboard" id="kboard"></div>
@@ -722,6 +722,14 @@ const USUARIOS = [
 const GESTOR = USUARIOS[0];
 const PIN_GESTOR = '221214';
 
+// ── v1.8.2 — Responsáveis para atribuição (vendedores + Humberto) ─
+function getResponsaveis(){
+  // Retorna vendedores + Humberto (gestor pode atribuir a si mesmo)
+  return USUARIOS.filter(u=>u.tipo==='vendedor' || u.nome==='Humberto');
+}
+// Filtro "Minhas Obras" — estado do gestor
+let VER_MINHAS_OBRAS = false;
+
 // ── TIME COMERCIAL v1.7 ───────────────────────────────────────────
 const TEAM = USUARIOS.filter(u=>u.tipo==='vendedor').map(u=>({
   ini:u.ini, nome:u.nome, region:u.region,
@@ -917,8 +925,35 @@ function trocarPerfil(){
 }
 
 function obrasVisiveis(){
-  if(!CURRENT_USER||CURRENT_USER.tipo==='gestor')return OBRAS;
+  if(!CURRENT_USER) return OBRAS;
+  // Gestor: vê todas, ou só as suas se o filtro "Minhas Obras" estiver ativo
+  if(CURRENT_USER.tipo==='gestor'){
+    if(VER_MINHAS_OBRAS) return OBRAS.filter(o=>o.vendedor===CURRENT_USER.nome);
+    return OBRAS;
+  }
+  // Vendedor: vê livres + as suas
   return OBRAS.filter(o=>!o.vendedor||o.vendedor===''||o.vendedor===CURRENT_USER.nome);
+}
+
+// ── v1.8.2 — Toggle "Minhas Obras" (gestor) ──────────────────────
+function toggleMinhasObras(){
+  VER_MINHAS_OBRAS = !VER_MINHAS_OBRAS;
+  // Atualiza os dois botões (banco e CRM)
+  ['btnMinhasObras','btnMinhasObrasCRM'].forEach(function(id){
+    var btn=document.getElementById(id);
+    if(btn){
+      btn.className = 'btn btn-sm gestor-only '+(VER_MINHAS_OBRAS?'btn-p':'btn-s');
+      btn.innerHTML = '<i class="ti ti-user-star"></i>'+(VER_MINHAS_OBRAS?'Vendo: Minhas Obras':'Minhas Obras');
+    }
+  });
+  // Atualiza subtítulos
+  var os=document.getElementById('obrasSub');
+  if(os) os.textContent = VER_MINHAS_OBRAS ? 'Mostrando apenas as suas obras' : 'Todas as obras do time';
+  var cs=document.getElementById('crmSub');
+  if(cs) cs.textContent = VER_MINHAS_OBRAS ? 'Seu pipeline pessoal' : 'Pipeline de todo o time';
+  filtObras();
+  rendKanban();
+  showToast(VER_MINHAS_OBRAS?'📋 Vendo apenas suas obras':'👥 Vendo todas as obras','info');
 }
 
 // ── ATRIBUIÇÃO DE OBRAS v1.6 ──────────────────────────────────────
@@ -926,73 +961,56 @@ async function atribuirObra(obraId){
   if(!CURRENT_USER || CURRENT_USER.tipo!=='gestor'){
     showToast('Apenas o gestor pode atribuir obras','error'); return;
   }
-  const o = OBRAS.find(x=>x.id===obraId);
+  // Busca a obra por id (compara como número e string para segurança)
+  const o = OBRAS.find(x=>x.id===obraId || x.id==obraId || String(x.id)===String(obraId));
   if(!o){ showToast('Obra não encontrada','error'); return; }
 
-  // Cria modal de atribuição
-  const todos = [...TEAM, {ini:'HU',nome:'Humberto',tel:'11940318727',cor:'#C0321A'}];
+  // Responsáveis: vendedores + Humberto (gestor pode atribuir a si mesmo)
+  const vendedores = getResponsaveis();
   const el = document.createElement('div');
   el.className='mo open'; el.id='mAtribuir';
-  el.innerHTML=`<div class="mdl" style="max-width:420px">
-    <div class="mtitle">Atribuir obra ao vendedor</div>
-    <div class="mclose" onclick=\"document.getElementById('mAtribuir').remove()\"><i class="ti ti-x" aria-hidden="true"></i></div>
-    <div style="background:var(--bg);border-radius:var(--rs);padding:12px;margin-bottom:14px;font-size:13px">
-      <strong>${o.nome}</strong><br>
-      <span style="color:var(--muted)">${o.cidade}, ${o.uf} · ${o.fase}</span>
-    </div>
-    <div style="font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px">Selecione o vendedor:</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      ${todos.map(v=>`
-        <button onclick="confirmarAtribuicao(${obraId},'${v.nome}','${v.tel}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border-md);border-radius:var(--rs);background:var(--card);cursor:pointer;text-align:left;transition:all .15s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='var(--card)'">
-          <div style="width:32px;height:32px;border-radius:50%;background:${v.cor||'#5E2DBF'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${v.ini}</div>
-          <div><div style="font-size:13px;font-weight:500;color:var(--text)">${v.nome}</div><div style="font-size:11px;color:var(--muted)">${v.region||'Sul, Sudeste'}</div></div>
-        </button>`).join('')}
-    </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:14px">
-      <button class="btn btn-s" onclick=\"document.getElementById('mAtribuir').remove()\">Cancelar</button>
-    </div>
-  </div>`;
+  el.innerHTML='<div class="mdl" style="max-width:420px">'+
+    '<div class="mtitle">Atribuir obra ao vendedor</div>'+
+    '<div class="mclose" onclick="this.closest(\'.mo\').remove()"><i class="ti ti-x"></i></div>'+
+    '<div style="background:var(--bg);border-radius:var(--rs);padding:12px;margin-bottom:14px;font-size:13px">'+
+      '<strong>'+o.nome+'</strong><br>'+
+      '<span style="color:var(--muted)">'+(o.cidade||'—')+', '+(o.uf||'')+' · '+(o.fase||'')+'</span>'+
+    '</div>'+
+    '<div style="font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px">Selecione o vendedor:</div>'+
+    '<div style="display:flex;flex-direction:column;gap:8px">'+
+    vendedores.map(function(v){
+      return '<button data-oid="'+obraId+'" data-nome="'+v.nome+'" onclick="confirmarAtribuicao(this.dataset.oid,this.dataset.nome)" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border-md);border-radius:var(--rs);background:var(--card);cursor:pointer;text-align:left">'+
+        '<div style="width:32px;height:32px;border-radius:50%;background:'+v.cor+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">'+v.ini+'</div>'+
+        '<div><div style="font-size:13px;font-weight:500;color:var(--text)">'+v.nome+'</div><div style="font-size:11px;color:var(--muted)">'+(v.region||'Sul, Sudeste')+'</div></div>'+
+      '</button>';
+    }).join('')+
+    '</div>'+
+    '<div style="display:flex;justify-content:flex-end;margin-top:14px">'+
+      '<button class="btn btn-s" onclick="this.closest(\'.mo\').remove()">Cancelar</button>'+
+    '</div>'+
+  '</div>';
   document.body.appendChild(el);
-  el.addEventListener('click',e=>{if(e.target===el){el.remove();}});
+  el.addEventListener('click',function(e){if(e.target===el){el.remove();}});
 }
 
-async function confirmarAtribuicao(obraId, nomeVendedor, telVendedor){
-  const o = OBRAS.find(x=>x.id===obraId);
-  if(!o) return;
+async function confirmarAtribuicao(obraId, nomeVendedor){
+  const o = OBRAS.find(x=>x.id===obraId || x.id==obraId || String(x.id)===String(obraId));
+  if(!o){ showToast('Obra não encontrada','error'); return; }
   o.vendedor = nomeVendedor;
-  o.status = o.status==='Novo'?'Em contato':o.status;
+  o.status = o.status==='Novo' ? 'Em contato' : o.status;
 
-  // Salva no Supabase se conectado
+  // Salva no Supabase
   if(SB_READY && sb){
-    await sb.from('obras').update({vendedor:nomeVendedor,status:o.status,updated_at:new Date().toISOString()}).eq('id',obraId);
-    await sb.from('alertas').insert({
-      tipo:'info',icone:'ti-user-check',
-      titulo:`Obra atribuída a você: ${o.nome}`,
-      sub:`${o.cidade}, ${o.uf} · ${o.fase} · Gestor: Humberto`,
-      lido:false
-    });
+    const {error} = await sb.from('obras').update({
+      vendedor:nomeVendedor, status:o.status, updated_at:new Date().toISOString()
+    }).eq('id', o.id);
+    if(error){ showToast('Erro ao salvar: '+error.message,'error'); return; }
   }
 
-  // Remove modal de atribuição
   document.getElementById('mAtribuir')?.remove();
-
-  // Mensagem WhatsApp
-  const tel = telVendedor.replace(/\D/g,'');
-  const msg = encodeURIComponent(
-    `*ObraRadar — Novo cliente atribuído* 🏗️\n\n` +
-    `Olá ${nomeVendedor}! Uma obra foi atribuída a você:\n\n` +
-    `*${o.nome}*\n` +
-    `📍 ${o.cidade}, ${o.uf}\n` +
-    `🏗️ Fase: ${o.fase}\n` +
-    `🏢 ${o.empresa||'—'}\n` +
-    `📞 Contato: ${o.contato||'—'} · ${o.tel||'—'}\n\n` +
-    `Acesse o ObraRadar para ver todos os detalhes e registrar seus contatos.`
-  );
-  window.open(`https://wa.me/55${tel}?text=${msg}`,'_blank');
-
-  showToast(`✓ Obra atribuída a ${nomeVendedor} · WhatsApp enviado!`,'success');
-  closeM();
+  showToast('✓ Obra atribuída a '+nomeVendedor,'success');
   filtObras();
+  rendCRM&&rendCRM();
 }
 
 // ── RADAR DE OBRAS v1.6 ───────────────────────────────────────────
@@ -1584,23 +1602,39 @@ function openNovaObra(){
 function closeM(){document.getElementById('mObra').classList.remove('open');}
 document.getElementById('mObra').addEventListener('click',function(e){if(e.target===this)closeM();});
 
+function rendCRM(){ rendKanban(); }
 function rendKanban(){
-  const board=document.getElementById('kboard');board.innerHTML='';
+  const board=document.getElementById('kboard');
+  if(!board) return;
+  board.innerHTML='';
+  // Filtro por perfil: gestor vê todas (ou só as suas se filtro ativo), vendedor vê só as suas
+  const isGestor = CURRENT_USER?.tipo==='gestor';
+  const nome = CURRENT_USER?.nome||'';
+  let obrasVisiveis;
+  if(isGestor){
+    obrasVisiveis = VER_MINHAS_OBRAS ? OBRAS.filter(o=>o.vendedor===nome) : OBRAS;
+  } else {
+    obrasVisiveis = OBRAS.filter(o=>o.vendedor===nome);
+  }
   KCOLS.forEach(col=>{
-    const cards=OBRAS.filter(o=>o.status===col.k);
+    const cards=obrasVisiveis.filter(o=>o.status===col.k);
     const el=document.createElement('div');el.className='kcol';
-    el.innerHTML=`<div class="kch"><span class="kct" style="color:${col.c}">${col.l}</span><span class="kcc" style="color:${col.c}">${cards.length}</span></div>
-    <div class="kcards">${cards.map(o=>{
-      const t=TEAM.find(x=>x.nome===o.vendedor)||TEAM[0];
+    el.innerHTML='<div class="kch"><span class="kct" style="color:'+col.c+'">'+col.l+'</span><span class="kcc" style="color:'+col.c+'">'+cards.length+'</span></div>'+
+    '<div class="kcards">'+cards.map(function(o){
+      const v=USUARIOS.find(function(x){return x.nome===o.vendedor;});
+      const vCor=v?v.cor:'#aaa';
+      const vIni=v?v.ini:'—';
       const tic={nova:'🔴',ampliacao:'🟡',reforma:'🔵'}[o.tipo]||'⚪';
-      return`<div class="kcard" onclick="openObra(${o.id})">
-        <div class="ktype">${tic} ${o.tipo==='nova'?'Nova':o.tipo==='ampliacao'?'Ampliação':'Reforma'}</div>
-        <div class="kname">${o.nome}</div>
-        <div class="kcity">${o.cidade}, ${o.uf} · ${o.m2.toLocaleString('pt-BR')} m²</div>
-        <div class="kbot"><span style="font-size:11px;color:var(--muted)">${o.fase}</span>
-        <div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--hint)">+${(o.id%7)+1}d</span>
-        <div class="kav" style="background:${t.cor}">${t.ini}</div></div></div>
-      </div>`;}).join('')}</div>`;
+      return '<div class="kcard" onclick="openObra('+o.id+')">'+
+        '<div class="ktype">'+tic+' '+(o.tipo==='nova'?'Nova':o.tipo==='ampliacao'?'Ampliação':'Reforma')+'</div>'+
+        '<div class="kname">'+(o.nome||'').replace('[RADAR] ','').replace('[ESPIÃO] ','').slice(0,45)+'</div>'+
+        '<div class="kcity">'+(o.cidade||'—')+', '+(o.uf||'')+' · '+((o.m2||0).toLocaleString('pt-BR'))+' m²</div>'+
+        '<div class="kbot"><span style="font-size:11px;color:var(--muted)">'+(o.fase||'')+'</span>'+
+        '<div style="display:flex;align-items:center;gap:5px">'+
+        (o.vendedor?'<div class="kav" style="background:'+vCor+'" title="'+o.vendedor+'">'+vIni+'</div>':'<span style="font-size:10px;color:var(--muted)">Livre</span>')+
+        '</div></div>'+
+      '</div>';
+    }).join('')+'</div>';
     board.appendChild(el);
   });
 }
@@ -2865,7 +2899,7 @@ function exportarRelatorio(){
   ${fechadas.length?`<h3 style="color:#1C7A3F;font-size:14px;margin-top:24px">Vendas Fechadas (${fechadas.length})</h3>
   <table><tr><th>Obra</th><th>Cidade/UF</th><th>Vendedor</th><th>Valor</th></tr>
   ${fechadas.map(o=>`<tr><td>${o.nome.slice(0,40)}</td><td>${o.cidade||'—'}, ${o.uf||''}</td><td>${o.vendedor||'—'}</td><td>R$ ${(o.valor_investimento/1000).toFixed(0)}k</td></tr>`).join('')}</table>`:''}
-  <div class="footer">ObraRadar v1.8 · Tecnoportas & Tecnodock · Gerado em ${agora}</div>
+  <div class="footer">ObraRadar v1.8.2 · Tecnoportas & Tecnodock · Gerado em ${agora}</div>
   </body></html>`;
   
   const win = window.open('','_blank');
@@ -3272,7 +3306,7 @@ async function atribuirPessoa(pessoaId){
     if(!conf) return;
   }
 
-  const vendedores=[...USUARIOS.filter(function(u){return u.tipo==='vendedor';})];
+  const vendedores=getResponsaveis();
   const el=document.createElement('div');
   el.className='mo open';el.id='mAtribPessoa';
   el.innerHTML='<div class="mdl" style="max-width:400px"><div class="mtitle">Atribuir: '+p.nome+'</div>'+
@@ -3304,10 +3338,6 @@ async function confirmarAtribuirPessoa(pessoaId,nomeVend,telVend){
   }
 
   document.getElementById('mAtribPessoa')?.remove();
-  // WhatsApp para vendedor
-  var tel=telVend.replace(/\D/g,'');
-  var msg=encodeURIComponent('*ObraRadar — Novo contato atribuído 👥*\n\nOlá '+nomeVend+'! Um novo contato foi atribuído a você:\n\n*'+p.nome+'*\n'+p.cargo+' · '+p.empresa+'\n📍 '+p.regiao+'\n\nDesenvolver relacionamento e registrar interações no sistema.');
-  window.open('https://wa.me/55'+tel+'?text='+msg,'_blank');
   showToast('✓ '+p.nome+' atribuído a '+nomeVend,'success');
   rendRadarPessoas();
   rendScoreDash();
@@ -3971,7 +4001,7 @@ function abrirWhatsApp(tel){ window.open("https://wa.me/55"+tel.replace(/\D/g,""
       await carregarRegistrosSemana();
       verificarFollowUps();
       iniciarAgendadorNotificacoes();
-      showToast('✓ ObraRadar v1.8 conectado!','success');
+      showToast('✓ ObraRadar v1.8.2 conectado!','success');
     }
   } catch(e){ console.warn('Supabase:', e.message); }
   // Agendamento diário às 8h — verifica follow-ups
