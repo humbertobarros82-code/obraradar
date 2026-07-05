@@ -175,7 +175,7 @@ tbody tr:last-child{border-bottom:none}
 <div class="topbar">
   <div class="tb-logo">
     <div class="lm"><div class="ld" style="background:#C0321A"></div><div class="ld" style="background:#D95F1A"></div><div class="ld" style="background:#1655A8"></div></div>
-    ObraRadar <span style="font-size:9px;background:#C0321A;color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:700">v1.8.2</span>
+    ObraRadar <span style="font-size:9px;background:#C0321A;color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:700">v1.8.3</span>
   </div>
   <div class="tb-search"><i class="ti ti-search" aria-hidden="true"></i><input type="text" placeholder="Buscar obra, cidade, empresa..."></div>
   <div class="tb-right">
@@ -191,11 +191,11 @@ tbody tr:last-child{border-bottom:none}
   <div style="width:100%;max-width:400px">
     <div style="text-align:center;margin-bottom:28px">
       <div style="font-family:'Sora',sans-serif;font-size:26px;font-weight:700;color:var(--text)">🏗️ ObraRadar</div>
-      <div style="font-size:12px;background:#C0321A;color:#fff;padding:2px 10px;border-radius:10px;display:inline-block;margin-top:4px">v1.8.2 · Tecnoportas & Tecnodock</div>
+      <div style="font-size:12px;background:#C0321A;color:#fff;padding:2px 10px;border-radius:10px;display:inline-block;margin-top:4px">v1.8.3 · Tecnoportas & Tecnodock</div>
       <div style="font-size:13px;color:var(--muted);margin-top:8px">Selecione seu perfil e informe sua senha</div>
     </div>
     <div id="loginCards" style="display:flex;flex-direction:column;gap:10px"></div>
-    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--muted)">ObraRadar v1.8.2 · Tecnoportas & Tecnodock</div>
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--muted)">ObraRadar v1.8.3 · Tecnoportas & Tecnodock</div>
   </div>
 </div>
 
@@ -204,9 +204,9 @@ tbody tr:last-child{border-bottom:none}
   <div style="margin-bottom:20px">
     <div class="sl">Principal</div>
     <div class="nav-item active" id="nav-dashboard" onclick="navTo('dashboard')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>Dashboard</div>
-    <div class="nav-item" id="nav-obras" onclick="navTo('obras')"><i class="ti ti-building-skyscraper" aria-hidden="true"></i>Banco de Obras<span class="nbadge" id="nbObras">36</span></div>
+    <div class="nav-item" id="nav-obras" onclick="navTo('obras')"><i class="ti ti-building-skyscraper" aria-hidden="true"></i>Banco de Obras<span class="nbadge" id="nbObras">0</span></div>
     <div class="nav-item" id="nav-crm" onclick="navTo('crm')"><i class="ti ti-layout-kanban" aria-hidden="true"></i>CRM Pipeline</div>
-    <div class="nav-item" id="nav-radar-pessoas" onclick="navTo('radar-pessoas')" style="background:linear-gradient(135deg,#F2EDFF,transparent);border:1px solid #C9B8F5;font-weight:600"><i class="ti ti-users" aria-hidden="true" style="color:#5E2DBF"></i>Radar de Pessoas<span class="nbadge" style="background:#5E2DBF;color:#fff" id="nbPessoas">50</span></div>
+    <div class="nav-item" id="nav-radar-pessoas" onclick="navTo('radar-pessoas')" style="background:linear-gradient(135deg,#F2EDFF,transparent);border:1px solid #C9B8F5;font-weight:600"><i class="ti ti-users" aria-hidden="true" style="color:#5E2DBF"></i>Radar de Pessoas<span class="nbadge" style="background:#5E2DBF;color:#fff" id="nbPessoas">0</span></div>
   </div>
   <div style="margin-bottom:20px">
     <div class="sl">IA Tecnoportas</div>
@@ -722,7 +722,7 @@ const USUARIOS = [
 const GESTOR = USUARIOS[0];
 const PIN_GESTOR = '221214';
 
-// ── v1.8.2 — Responsáveis para atribuição (vendedores + Humberto) ─
+// ── v1.8.3 — Responsáveis para atribuição (vendedores + Humberto) ─
 function getResponsaveis(){
   // Retorna vendedores + Humberto (gestor pode atribuir a si mesmo)
   return USUARIOS.filter(u=>u.tipo==='vendedor' || u.nome==='Humberto');
@@ -935,7 +935,7 @@ function obrasVisiveis(){
   return OBRAS.filter(o=>!o.vendedor||o.vendedor===''||o.vendedor===CURRENT_USER.nome);
 }
 
-// ── v1.8.2 — Toggle "Minhas Obras" (gestor) ──────────────────────
+// ── v1.8.3 — Toggle "Minhas Obras" (gestor) ──────────────────────
 function toggleMinhasObras(){
   VER_MINHAS_OBRAS = !VER_MINHAS_OBRAS;
   // Atualiza os dois botões (banco e CRM)
@@ -1160,15 +1160,7 @@ async function buscarLicitacoesPNCP(){
     if(start>-1){try{const items=JSON.parse(raw.slice(start,end+1).replace(/,\s*([}\]])/g,'$1'));items.forEach(function(it){ALERTAS.unshift({t:'info',ic:'ti-gavel',tt:'[PNCP] '+it.nome,sb:it.cidade+', '+it.uf+' · '+it.valor,tm:'agora'});});rendAlertas();showToast('✓ '+items.length+' licitações via IA','info');}catch(e2){}}
   }
 }
-const ALERTAS=[
-  {t:'danger',ic:'ti-door',tt:'[INTEC CO228520] TAYAYÁ RESIDENCE & RESORT — novo lead!',sb:'São Pedro do Paraná, PR · COMERCIAL/TURISMO · Douglas Bontempi (16) 99748-3109',tm:'agora'},
-  {t:'danger',ic:'ti-door',tt:'[INTEC IN007919] ALYNE COSMÉTICOS — nova unidade industrial!',sb:'Maranguape, CE · 4 contatos disponíveis · Gustavo Sousa (85) 3521-8888',tm:'8 min'},
-  {t:'danger',ic:'ti-door',tt:'[INTEC RE040125] D6 OCEAN VIEW — 34 pavimentos em estrutura!',sb:'Itajaí, SC · Alto padrão · Gisele (47) 3348-4106 / compras@d6empreendimentos.com.br',tm:'22 min'},
-  {t:'warn',ic:'ti-clock',tt:'Shopping Bela Vista — fase de acabamento! Ligar hoje.',sb:'Curitiba, PR · 12.400 m² · Verificar responsável',tm:'1h'},
-  {t:'warn',ic:'ti-clock',tt:'Galpão Logístico CB — follow-up vencido há 3 dias',sb:'Campinas, SP · Proposta R$ 48.000 aguardando',tm:'2h'},
-  {t:'info',ic:'ti-building',tt:'Nova obra detectada — Parque Industrial Barueri',sb:'Barueri, SP · 18.000 m² · Fase: Acabamento · Não atribuída',tm:'4h'},
-  {t:'success',ic:'ti-check',tt:'Proposta aceita — Condomínio Verde!',sb:'BH, MG · R$ 84.000 fechado',tm:'5h'},
-];
+const ALERTAS=[];
 const KCOLS=[
   {k:'Novo',            l:'Novo Lead',        c:'#1655A8'},
   {k:'Em contato',      l:'Em Contato',       c:'#D95F1A'},
@@ -2402,13 +2394,17 @@ async function loadObrasFromDB() {
           contato: o.contato, cargo: o.cargo, tel: o.tel, email: o.email,
           contatos: (o.contatos_obra||[]).map(c=>({nome:c.nome,cargo:c.cargo,tel:c.tel,email:c.email})),
           m2: o.m2 || 0, status: o.status || 'Novo',
-          vendedor: o.vendedor || '—',
+          valor_investimento: o.valor_investimento || 0,
+          vendedor: o.vendedor || '',
           lat: parseFloat(o.lat)||0, lng: parseFloat(o.lng)||0
         });
       });
       showToast(`✓ ${obras.length} obras carregadas do banco`,'success');
-      document.querySelector('.ps').textContent = obras.length + ' obras ativas · banco de dados ao vivo';
+      const ps=document.querySelector('#view-dashboard .ps');
+      if(ps) ps.textContent = obras.length + ' obras no banco · dados ao vivo';
     }
+    const nb=document.getElementById('nbObras');
+    if(nb) nb.textContent = OBRAS.length;
     await loadAlertasFromDB();
     await loadTimeFromDB();
     initDash();
@@ -2936,7 +2932,7 @@ function exportarRelatorio(){
   ${fechadas.length?`<h3 style="color:#1C7A3F;font-size:14px;margin-top:24px">Vendas Fechadas (${fechadas.length})</h3>
   <table><tr><th>Obra</th><th>Cidade/UF</th><th>Vendedor</th><th>Valor</th></tr>
   ${fechadas.map(o=>`<tr><td>${o.nome.slice(0,40)}</td><td>${o.cidade||'—'}, ${o.uf||''}</td><td>${o.vendedor||'—'}</td><td>R$ ${(o.valor_investimento/1000).toFixed(0)}k</td></tr>`).join('')}</table>`:''}
-  <div class="footer">ObraRadar v1.8.2 · Tecnoportas & Tecnodock · Gerado em ${agora}</div>
+  <div class="footer">ObraRadar v1.8.3 · Tecnoportas & Tecnodock · Gerado em ${agora}</div>
   </body></html>`;
   
   const win = window.open('','_blank');
@@ -4038,7 +4034,7 @@ function abrirWhatsApp(tel){ window.open("https://wa.me/55"+tel.replace(/\D/g,""
       await carregarRegistrosSemana();
       verificarFollowUps();
       iniciarAgendadorNotificacoes();
-      showToast('✓ ObraRadar v1.8.2 conectado!','success');
+      showToast('✓ ObraRadar v1.8.3 conectado!','success');
     }
   } catch(e){ console.warn('Supabase:', e.message); }
   // Agendamento diário às 8h — verifica follow-ups
