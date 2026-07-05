@@ -243,10 +243,10 @@ tbody tr:last-child{border-bottom:none}
     </div>
   </div>
   <div class="kpi-row">
-    <div class="kc"><div class="ki" style="background:#FFEAED"><i class="ti ti-building-skyscraper" aria-hidden="true" style="color:#C0321A;font-size:16px"></i></div><div class="kv">3.847</div><div class="kl">Obras ativas</div><div class="kd up"><i class="ti ti-arrow-up" aria-hidden="true"></i>+124 hoje</div></div>
-    <div class="kc"><div class="ki" style="background:var(--orange-l)"><i class="ti ti-sparkles" aria-hidden="true" style="color:var(--orange);font-size:16px"></i></div><div class="kv">124</div><div class="kl">Novas nas últimas 24h</div><div class="kd up"><i class="ti ti-arrow-up" aria-hidden="true"></i>+18% vs ontem</div></div>
-    <div class="kc"><div class="ki" style="background:var(--amber-bg)"><i class="ti ti-phone-off" aria-hidden="true" style="color:var(--amber);font-size:16px"></i></div><div class="kv">287</div><div class="kl">Sem contato</div><div class="kd wn"><i class="ti ti-alert-triangle" aria-hidden="true"></i>74 vencidos</div></div>
-    <div class="kc"><div class="ki" style="background:var(--green-bg)"><i class="ti ti-trophy" aria-hidden="true" style="color:var(--green);font-size:16px"></i></div><div class="kv">8,3%</div><div class="kl">Taxa de conversão</div><div class="kd up"><i class="ti ti-arrow-up" aria-hidden="true"></i>+1,2pp este mês</div></div>
+    <div class="kc"><div class="ki" style="background:#FFEAED"><i class="ti ti-building-skyscraper" aria-hidden="true" style="color:#C0321A;font-size:16px"></i></div><div class="kv">0</div><div class="kl">Obras ativas</div><div class="kd">Total do time</div></div>
+    <div class="kc"><div class="ki" style="background:var(--orange-l)"><i class="ti ti-sparkles" aria-hidden="true" style="color:var(--orange);font-size:16px"></i></div><div class="kv">0</div><div class="kl">Novas nas últimas 24h</div><div class="kd">Total importadas</div></div>
+    <div class="kc"><div class="ki" style="background:var(--amber-bg)"><i class="ti ti-phone-off" aria-hidden="true" style="color:var(--amber);font-size:16px"></i></div><div class="kv">0</div><div class="kl">Sem contato</div><div class="kd">Aguardando</div></div>
+    <div class="kc"><div class="ki" style="background:var(--green-bg)"><i class="ti ti-trophy" aria-hidden="true" style="color:var(--green);font-size:16px"></i></div><div class="kv">0</div><div class="kl">Obras em andamento</div><div class="kd">Em andamento</div></div>
   </div>
   <div class="g2">
     <div class="card">
@@ -278,7 +278,7 @@ tbody tr:last-child{border-bottom:none}
       <button class="btn btn-s btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="navTo('obras')">Ver banco completo</button>
     </div>
     <div class="card">
-      <div class="ct"><span><i class="ti ti-filter" aria-hidden="true"></i>Funil comercial</span><span style="font-size:11px;color:var(--muted)">maio 2026</span></div>
+      <div class="ct"><span><i class="ti ti-filter" aria-hidden="true"></i>Funil comercial</span><span style="font-size:11px;color:var(--muted)" id="funilMes"></span></div>
       <div id="dFunil"></div>
     </div>
     <div class="card">
@@ -414,7 +414,7 @@ tbody tr:last-child{border-bottom:none}
 <!-- RELATÓRIOS -->
 <div class="view" id="view-relatorios">
   <div class="ph">
-    <div><div class="pt">Relatórios</div><div class="ps">Análise de desempenho · maio 2026</div></div>
+    <div><div class="pt">Relatórios</div><div class="ps">Análise de desempenho do time</div></div>
     <button class="btn btn-p btn-sm" onclick="exportarRelatorio()"><i class="ti ti-download" aria-hidden="true"></i>Exportar PDF</button>
   </div>
   <div class="kpi-row">
@@ -1737,6 +1737,33 @@ async function apolloSearch(empresa, titulos) {
 }
 
 // ── RENDERIZAR CARD DE CONTATO ────────────────────────────────────
+function gerarDDD(local){
+  const s=(local||'').toLowerCase();
+  const mapa={
+    'são paulo':'11','sao paulo':'11','sp':'11','campinas':'19','santos':'13','ribeirão':'16','ribeirao':'16','são josé do rio':'17','sorocaba':'15','bauru':'14',
+    'rio de janeiro':'21','rj':'21','niterói':'21','niteroi':'21',
+    'belo horizonte':'31','mg':'31','minas':'31','uberlândia':'34','uberlandia':'34','contagem':'31','juiz de fora':'32','ouro branco':'31','varginha':'35',
+    'curitiba':'41','pr':'41','londrina':'43','maringá':'44','maringa':'44','cascavel':'45','foz':'45','ponta grossa':'42','telêmaco':'42','telemaco':'42',
+    'florianópolis':'48','florianopolis':'48','sc':'48','joinville':'47','blumenau':'47','criciúma':'48','criciuma':'48','brusque':'47','itapema':'47','chapecó':'49','chapeco':'49','jaraguá':'47','jaragua':'47',
+    'porto alegre':'51','rs':'51','caxias':'54','pelotas':'53','santa maria':'55',
+    'salvador':'71','ba':'71','bahia':'71',
+    'recife':'81','pe':'81','pernambuco':'81',
+    'fortaleza':'85','ce':'85','ceará':'85','ceara':'85',
+    'goiânia':'62','goiania':'62','go':'62','goiás':'62','goias':'62','anápolis':'62','anapolis':'62',
+    'brasília':'61','brasilia':'61','df':'61',
+    'cuiabá':'65','cuiaba':'65','mt':'65','rondonópolis':'66','rondonopolis':'66','sinop':'66',
+    'campo grande':'67','ms':'67',
+    'belém':'91','belem':'91','pa':'91','pará':'91','para':'91','benevides':'91',
+    'manaus':'92','am':'92','amazonas':'92',
+    'palmas':'63','to':'63','tocantins':'63',
+    'são luís':'98','sao luis':'98','ma':'98','maranhão':'98','maranhao':'98',
+    'natal':'84','rn':'84','joão pessoa':'83','joao pessoa':'83','pb':'83','maceió':'82','maceio':'82','al':'82','aracaju':'79','se':'79','teresina':'86','pi':'86',
+    'vitória':'27','vitoria':'27','es':'27','espírito':'27','espirito':'27','vila velha':'27',
+  };
+  for(const chave in mapa){ if(s.includes(chave)) return mapa[chave]; }
+  return '11'; // default São Paulo
+}
+
 function renderContactCard(c, i, isReal) {
   const [bg,fg] = bC(c.tipo||'Técnico');
   const realBadge = isReal
@@ -1860,7 +1887,7 @@ async function buscarD(){
     await new Promise(r=>setTimeout(r,500));
     const promptAI = `Você é especialista B2B construção civil Brasil. Empresa: "${emp}". Vendo PORTAS AUTOMÁTICAS. Cargos: ${tags.join(', ')}.
 ${contatosReais.length>0?`Já encontrei ${contatosReais.length} contatos reais. Complete com mais se necessário.`:'Gere 6 contatos plausíveis.'}
-IMPORTANTE: Gere telefones REAIS e plausíveis com DDD correto da cidade da empresa (ex: SP=11, RJ=21, MG=31, PR=41, SC=48, RS=51). NÃO use XXXX nem mascare números.
+IMPORTANTE: Todo contato DEVE ter telefone preenchido no formato (DDD) 9XXXX-XXXX com DDD correto da cidade da empresa (SP=11, RJ=21, MG=31, PR=41, SC=48, RS=51, GO=62, BA=71, PE=81, CE=85, MT=65, PA=91). NUNCA use XXXX, NUNCA deixe telefone vazio, NUNCA mascare. O campo "telefone" é OBRIGATÓRIO em cada contato.
 Retorne SOMENTE JSON válido sem texto fora dele:
 {"empresa":"nome","setor":"setor","porte":"grande","cidade_sede":"cidade, UF","abordagem":"estratégia de venda de portas automáticas para essa empresa em 2 parágrafos","contatos":[{"nome":"João Silva","cargo":"Gerente de Compras","departamento":"Compras","tipo":"Decisor","email":"joao.silva@empresa.com.br","telefone":"(11) 99234-5678","linkedin":"linkedin.com/in/joaosilva","cidade":"São Paulo, SP","relevancia":85}]}`;
 
@@ -1868,7 +1895,17 @@ Retorne SOMENTE JSON válido sem texto fora dele:
     const rawAI = await callAI('Você é especialista B2B em vendas de portas automáticas para construção civil brasileira. Retorne APENAS JSON válido, sem texto adicional.', promptAI, 2000);
     updateStep(4);
     const p = parseAIJson(rawAI);
-    const csAI = (p.contatos||[]).map(c=>({...c,_real:false}));
+    const csAI = (p.contatos||[]).map(c=>{
+      // Garante telefone — se a IA não retornou, gera um plausível com DDD da região
+      let tel = c.telefone||c.tel||c.phone||'';
+      if(!tel || /x{3,}/i.test(tel) || tel.replace(/\D/g,'').length < 10){
+        const ddd = gerarDDD(c.cidade||p.cidade_sede||emp);
+        const n1 = 90000+Math.floor(Math.random()*9999);
+        const n2 = 1000+Math.floor(Math.random()*8999);
+        tel = '('+ddd+') 9'+n1.toString().slice(0,4)+'-'+n2;
+      }
+      return {...c, telefone:tel, _real:false};
+    });
 
     // Combina: reais primeiro, depois IA
     const todosCt = [...contatosReais, ...csAI].slice(0,8);
